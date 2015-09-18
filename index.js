@@ -5,9 +5,8 @@ var cliCursor = require('cli-cursor');
 function main(stream) {
 	var prevLineCount = 0;
 
-	cliCursor.hide();
-
 	var render = function () {
+		cliCursor.hide();
 		var out = [].join.call(arguments, ' ') + '\n';
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;

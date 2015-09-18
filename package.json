@@ -38,7 +38,7 @@
   ],
   "dependencies": {
     "ansi-escapes": "^1.0.0",
-    "cli-cursor": "^1.0.1"
+    "cli-cursor": "^1.0.2"
   },
   "devDependencies": {
     "ava": "0.0.4",
