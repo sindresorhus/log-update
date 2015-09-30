@@ -10,6 +10,7 @@ function main(stream) {
 		var out = [].join.call(arguments, ' ') + '\n';
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
+		cliCursor.show();
 	};
 
 	render.clear = function () {
