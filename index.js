@@ -19,6 +19,7 @@ function main(stream) {
 
 	render.done = function () {
 		prevLineCount = 0;
+		cliCursor.show();
 	};
 
 	return render;
