@@ -13,13 +13,12 @@ function main(stream) {
 	};
 
 	render.clear = function () {
+		stream.write(ansiEscapes.eraseLines(prevLineCount));
 		prevLineCount = 0;
-		stream.write(ansiEscapes.eraseLines(prevLineCount + 1));
 	};
 
 	render.done = function () {
 		prevLineCount = 0;
-		stream.write('\n');
 	};
 
 	return render;
