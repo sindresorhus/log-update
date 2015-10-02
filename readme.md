@@ -16,15 +16,21 @@ $ npm install --save log-update
 ## Usage
 
 ```js
-var logUpdate = require('log-update');
+const logUpdate = require('log-update');
+const frames = ['-', '\\', '|', '/'];
+let i = 0;
 
-var i = 0;
-var frames = ['-', '\\', '|', '/'];
+setInterval(() => {
+	const frame = frames[i = ++i % frames.length];
 
-setInterval(function () {
-	var frame = frames[i++ % frames.length];
-	logUpdate('\n' + '        ♥♥\n   ' + frame + ' unicorns ' + frame + '\n        ♥♥');
-}, 100);
+	logUpdate(
+`
+        ♥♥
+   ${frame} unicorns ${frame}
+        ♥♥
+`
+	);
+}, 80);
 ```
 
 
