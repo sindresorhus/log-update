@@ -8,8 +8,7 @@ function main(stream) {
 	var render = function () {
 		cliCursor.hide();
 		var out = [].join.call(arguments, ' ') + '\n';
-		render.clear();
-		stream.write(out);
+		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
 
