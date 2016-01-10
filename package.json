@@ -13,7 +13,7 @@
     "node": ">=0.10.0"
   },
   "scripts": {
-    "test": "xo && ava"
+    "test": "xo && node test.js"
   },
   "files": [
     "index.js"
@@ -41,7 +41,6 @@
     "cli-cursor": "^1.0.2"
   },
   "devDependencies": {
-    "ava": "*",
     "xo": "*"
   }
 }
