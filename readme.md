@@ -63,7 +63,7 @@ Get a `logUpdate` method that logs to the specified stream.
 
 ## Examples
 
-- [speed-test](https://github.com/sindresorhus/speed-test) - Uses this module to render a spinner
+- [speed-test](https://github.com/sindresorhus/speed-test) - Uses this module to render a spinner using [elegant-spinner](https://github.com/sindresorhus/elegant-spinner)
 
 
 ## License
