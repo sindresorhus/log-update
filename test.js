@@ -1,17 +1,17 @@
 'use strict';
-var logUpdate = require('./');
+const logUpdate = require('./');
 
-var i = 0;
-var int = setInterval(function () {
+let i = 0;
+const int = setInterval(() => {
 	i++;
 
-	var ret = '[1]  ' + Math.random();
+	let ret = `[1]  ${Math.random()}`;
 
 	if (i < 10) {
-		ret += ' ~ ' + Math.random();
+		ret += ` ~ ${Math.random()}`;
 	}
 
-	ret += '\n[2]  ' + Math.random();
+	ret += `\n[2]  ${Math.random()}`;
 
 	logUpdate(ret);
 }, 100);
@@ -19,7 +19,7 @@ var int = setInterval(function () {
 setTimeout(logUpdate.done, 1000);
 setTimeout(logUpdate.done, 3000);
 
-setTimeout(function () {
+setTimeout(() => {
 	clearInterval(int);
 	logUpdate.clear();
 }, 4000);

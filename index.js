@@ -1,29 +1,29 @@
 'use strict';
-var ansiEscapes = require('ansi-escapes');
-var cliCursor = require('cli-cursor');
+const ansiEscapes = require('ansi-escapes');
+const cliCursor = require('cli-cursor');
 
-function main(stream) {
-	var prevLineCount = 0;
+const main = stream => {
+	let prevLineCount = 0;
 
-	var render = function () {
+	const render = function () {
 		cliCursor.hide();
-		var out = [].join.call(arguments, ' ') + '\n';
+		const out = [].join.call(arguments, ' ') + '\n';
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
 
-	render.clear = function () {
+	render.clear = () => {
 		stream.write(ansiEscapes.eraseLines(prevLineCount));
 		prevLineCount = 0;
 	};
 
-	render.done = function () {
+	render.done = () => {
 		prevLineCount = 0;
 		cliCursor.show();
 	};
 
 	return render;
-}
+};
 
 module.exports = main(process.stdout);
 module.exports.stderr = main(process.stderr);
