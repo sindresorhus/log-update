@@ -10,7 +10,7 @@
     "url": "sindresorhus.com"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=4"
   },
   "scripts": {
     "test": "xo && node test.js"
@@ -42,5 +42,8 @@
   },
   "devDependencies": {
     "xo": "*"
+  },
+  "xo": {
+    "esnext": true
   }
 }
