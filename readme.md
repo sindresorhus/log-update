@@ -1,6 +1,6 @@
 # log-update [![Build Status](https://travis-ci.org/sindresorhus/log-update.svg?branch=master)](https://travis-ci.org/sindresorhus/log-update)
 
-> Log by overwriting the previous output in the terminal.  
+> Log by overwriting the previous output in the terminal.<br>
 > Useful for rendering progress bars, animations, etc.
 
 ![](screenshot.gif)
@@ -46,7 +46,7 @@ Clear the logged output.
 
 ### logUpdate.done()
 
-Persist the logged output.  
+Persist the logged output.<br>
 Useful if you want to start a new log session below the current one.
 
 ### logUpdate.stderr(text, ...)
