@@ -63,6 +63,8 @@ Get a `logUpdate` method that logs to the specified stream.
 
 ## Examples
 
+- [listr](https://github.com/SamVerschueren/listr) - Uses this module to render an interactive task list
+- [ora](https://github.com/sindresorhus/ora) - Uses this module to render awesome spinners
 - [speed-test](https://github.com/sindresorhus/speed-test) - Uses this module to render a [spinner](https://github.com/sindresorhus/elegant-spinner)
 
 
