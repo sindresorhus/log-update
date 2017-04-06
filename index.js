@@ -9,9 +9,10 @@ const main = stream => {
 
 	const render = function () {
 		cliCursor.hide();
-		const out = [].join.call(arguments, ' ') + '\n';
+		let out = [].join.call(arguments, ' ') + '\n';
+		out = wrapAnsi(out, termSize().columns, {wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
-		prevLineCount = wrapAnsi(out, termSize().columns, {wordWrap: false}).split('\n').length;
+		prevLineCount = out.split('\n').length;
 	};
 
 	render.clear = () => {
