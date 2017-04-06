@@ -11,7 +11,7 @@ const main = stream => {
 		cliCursor.hide();
 		const out = [].join.call(arguments, ' ') + '\n';
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
-		prevLineCount = wrapAnsi(out, termSize().columns).split('\n').length;
+		prevLineCount = wrapAnsi(out, termSize().columns, {wordWrap: false}).split('\n').length;
 	};
 
 	render.clear = () => {
