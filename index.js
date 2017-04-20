@@ -1,13 +1,15 @@
 'use strict';
 const ansiEscapes = require('ansi-escapes');
 const cliCursor = require('cli-cursor');
+const wrapAnsi = require('wrap-ansi');
 
 const main = stream => {
 	let prevLineCount = 0;
 
 	const render = function () {
 		cliCursor.hide();
-		const out = [].join.call(arguments, ' ') + '\n';
+		let out = [].join.call(arguments, ' ') + '\n';
+		out = wrapAnsi(out, process.stdout.columns || 80, {wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
