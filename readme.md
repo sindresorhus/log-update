@@ -70,4 +70,4 @@ Get a `logUpdate` method that logs to the specified stream.
 
 ## License
 
-MIT © [Sindre Sorhus](http://sindresorhus.com)
+MIT © [Sindre Sorhus](https://sindresorhus.com)

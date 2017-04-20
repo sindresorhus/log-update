@@ -1,5 +1,5 @@
 'use strict';
-const logUpdate = require('./');
+const logUpdate = require('.');
 
 let i = 0;
 const int = setInterval(() => {
