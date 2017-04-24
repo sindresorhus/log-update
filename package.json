@@ -37,7 +37,7 @@
     "animation"
   ],
   "dependencies": {
-    "ansi-escapes": "^1.0.0",
+    "ansi-escapes": "^2.0.0",
     "cli-cursor": "^2.0.0",
     "wrap-ansi": "^2.1.0"
   },
