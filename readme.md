@@ -21,7 +21,7 @@ const frames = ['-', '\\', '|', '/'];
 let i = 0;
 
 setInterval(() => {
-	const frame = frames[i = ++i % frames.length];
+	const frame = frames[++i % frames.length];
 
 	logUpdate(
 `
