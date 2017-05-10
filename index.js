@@ -6,10 +6,14 @@ const wrapAnsi = require('wrap-ansi');
 const main = stream => {
 	let prevLineCount = 0;
 
+	const getWidth = function (columns) {
+		return (columns && columns > 0) ? columns - 1 : 80;
+	};
+
 	const render = function () {
 		cliCursor.hide();
 		let out = [].join.call(arguments, ' ') + '\n';
-		out = wrapAnsi(out, (process.stdout.columns - 1) || 80, {hard: true, wordWrap: false});
+		out = wrapAnsi(out, getWidth(process.stdout.columns), {hard: true, wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
