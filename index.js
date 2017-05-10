@@ -9,7 +9,7 @@ const main = stream => {
 	const render = function () {
 		cliCursor.hide();
 		let out = [].join.call(arguments, ' ') + '\n';
-		out = wrapAnsi(out, process.stdout.columns || 80, {wordWrap: false});
+		out = wrapAnsi(out, (process.stdout.columns - 1) || 80, {hard: true, wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
