@@ -1,6 +1,6 @@
 {
-  "name": "log-update",
-  "version": "2.0.0",
+  "name": "log-update-async-hook",
+  "version": "2.0.1",
   "description": "Log by overwriting the previous output in the terminal. Useful for rendering progress bars, animations, etc.",
   "license": "MIT",
   "repository": "sindresorhus/log-update",
@@ -9,14 +9,12 @@
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com"
   },
-  "engines": {
-    "node": ">=4"
-  },
   "scripts": {
     "test": "xo && node test.js"
   },
+  "main": "src/index.js",
   "files": [
-    "index.js"
+    "src"
   ],
   "keywords": [
     "log",
@@ -38,7 +36,8 @@
   ],
   "dependencies": {
     "ansi-escapes": "^2.0.0",
-    "cli-cursor": "^2.0.0",
+    "async-exit-hook": "^1.1.2",
+    "onetime": "^2.0.1",
     "wrap-ansi": "^2.1.0"
   },
   "devDependencies": {
