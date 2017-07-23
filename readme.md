@@ -9,7 +9,7 @@
 ## Install
 
 ```
-$ npm install --save log-update
+$ npm install log-update
 ```
 
 
