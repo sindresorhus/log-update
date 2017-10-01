@@ -56,9 +56,18 @@ Log to stderr.
 ### logUpdate.stderr.clear()
 ### logUpdate.stderr.done()
 
-### logUpdate.create(stream)
+### logUpdate.create(stream, options)
 
 Get a `logUpdate` method that logs to the specified stream.
+Additionally, `logUpdate.create()` method accepts `showCursor` option, which determines whether to show a cursor or not. By default, the cursor is hidden.
+Showing a cursor is useful when a CLI accepts input from a user.
+
+```js
+// Write output, but don't hide a cursor
+const log = logUpdate.create(process.stdout, {
+	showCursor: true
+});
+```
 
 
 ## Examples
