@@ -56,9 +56,27 @@ Log to stderr.
 ### logUpdate.stderr.clear()
 ### logUpdate.stderr.done()
 
-### logUpdate.create(stream)
+### logUpdate.create(stream, [options])
 
 Get a `logUpdate` method that logs to the specified stream.
+
+#### options
+
+Type: `Object`
+
+##### showCursor
+
+Type: `boolean`<br>
+Default: `false`
+
+Show the cursor. This can be useful when a CLI accepts input from a user.
+
+```js
+// Write output but don't hide the cursor
+const log = logUpdate.create(process.stdout, {
+	showCursor: true
+});
+```
 
 
 ## Examples
