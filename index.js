@@ -4,7 +4,11 @@ const cliCursor = require('cli-cursor');
 const wrapAnsi = require('wrap-ansi');
 const isWindows = require('is-windows');
 
-const main = stream => {
+const main = (stream, options) => {
+	options = Object.assign({
+		showCursor: false
+	}, options);
+
 	let prevLineCount = 0;
 
 	const getWidth = function (columns) {
@@ -22,9 +26,12 @@ const main = stream => {
 	};
 
 	const render = function () {
-		cliCursor.hide();
+		if (!options.showCursor) {
+			cliCursor.hide();
+		}
+
 		let out = [].join.call(arguments, ' ') + '\n';
-		out = wrapAnsi(out, getWidth(process.stdout.columns), {hard: true, wordWrap: false});
+		out = wrapAnsi(out, getWidth(process.stdout.columns), {trim: false, hard: true, wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
@@ -36,7 +43,10 @@ const main = stream => {
 
 	render.done = () => {
 		prevLineCount = 0;
-		cliCursor.show();
+
+		if (!options.showCursor) {
+			cliCursor.show();
+		}
 	};
 
 	return render;

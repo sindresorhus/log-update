@@ -1,6 +1,6 @@
 {
   "name": "log-update",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "Log by overwriting the previous output in the terminal. Useful for rendering progress bars, animations, etc.",
   "license": "MIT",
   "repository": "sindresorhus/log-update",
@@ -37,10 +37,10 @@
     "animation"
   ],
   "dependencies": {
-    "ansi-escapes": "^2.0.0",
+    "ansi-escapes": "^3.0.0",
     "cli-cursor": "^2.0.0",
     "is-windows": "^1.0.1",
-    "wrap-ansi": "^2.1.0"
+    "wrap-ansi": "^3.0.1"
   },
   "devDependencies": {
     "xo": "*"
