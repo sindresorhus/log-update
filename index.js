@@ -12,12 +12,12 @@ const main = (stream, options) => {
 	let prevLineCount = 0;
 
 	const getWidth = function (columns) {
-		// default width to 80 if we can't get column count
+		// Default width to 80 if we can't get column count
 		if (!columns) {
 			return 80;
 		}
 
-		// windows appears to wrap a character early
+		// Windows appears to wrap a character early
 		if (isWindows()) {
 			return columns - 1;
 		}
