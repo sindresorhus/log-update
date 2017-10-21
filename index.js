@@ -2,12 +2,23 @@
 const ansiEscapes = require('ansi-escapes');
 const cliCursor = require('cli-cursor');
 const wrapAnsi = require('wrap-ansi');
+const isWindows = require('is-windows');
 
 const main = stream => {
 	let prevLineCount = 0;
 
 	const getWidth = function (columns) {
-		return (columns && columns > 0) ? columns - 1 : 80;
+		// default width to 80 if we can't get column count
+		if (!columns) {
+			return 80;
+		}
+
+		// windows appears to wrap a character early
+		if (isWindows()) {
+			return columns - 1;
+		}
+
+		return columns;
 	};
 
 	const render = function () {
