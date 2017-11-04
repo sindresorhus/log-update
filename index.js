@@ -10,13 +10,27 @@ const main = (stream, options) => {
 
 	let prevLineCount = 0;
 
+	const getWidth = function (columns) {
+		// Default width to 80 if we can't get column count
+		if (!columns) {
+			return 80;
+		}
+
+		// Windows appears to wrap a character early
+		if (process.platform === 'win32') {
+			return columns - 1;
+		}
+
+		return columns;
+	};
+
 	const render = function () {
 		if (!options.showCursor) {
 			cliCursor.hide();
 		}
 
 		let out = [].join.call(arguments, ' ') + '\n';
-		out = wrapAnsi(out, process.stdout.columns || 80, {wordWrap: false, trim: false, hard: true});
+		out = wrapAnsi(out, getWidth(process.stdout.columns), {trim: false, hard: true, wordWrap: false});
 		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
 		prevLineCount = out.split('\n').length;
 	};
