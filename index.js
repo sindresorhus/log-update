@@ -1,6 +1,7 @@
 'use strict';
 const ansiEscapes = require('ansi-escapes');
 const cliCursor = require('cli-cursor');
+const splitLines = require('split-lines');
 const wrapAnsi = require('wrap-ansi');
 
 const getWidth = stream => {
@@ -24,7 +25,7 @@ const main = (stream, options) => {
 		showCursor: false
 	}, options);
 
-	let prevLineCount = 0;
+	let prevLines = [];
 
 	const render = function () {
 		if (!options.showCursor) {
@@ -37,17 +38,20 @@ const main = (stream, options) => {
 			hard: true,
 			wordWrap: false
 		});
-		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
-		prevLineCount = out.split('\n').length;
+		const lines = splitLines(out, {preserveNewlines: true});
+		const unchangedLinesCount = getUnchangedLinesCount(prevLines, lines);
+		const diffOut = lines.slice(unchangedLinesCount).join('');
+		stream.write(ansiEscapes.eraseLines(prevLines.length - unchangedLinesCount) + diffOut);
+		prevLines = lines;
 	};
 
 	render.clear = () => {
-		stream.write(ansiEscapes.eraseLines(prevLineCount));
-		prevLineCount = 0;
+		stream.write(ansiEscapes.eraseLines(prevLines.length));
+		prevLines = [];
 	};
 
 	render.done = () => {
-		prevLineCount = 0;
+		prevLines = [];
 
 		if (!options.showCursor) {
 			cliCursor.show();
@@ -56,6 +60,15 @@ const main = (stream, options) => {
 
 	return render;
 };
+
+function getUnchangedLinesCount(prevLines, lines) {
+	for (let i = 0; i < lines.length; i++) {
+		if (prevLines[i] !== lines[i]) {
+			return i;
+		}
+	}
+	return lines.length;
+}
 
 module.exports = main(process.stdout);
 module.exports.stderr = main(process.stderr);
