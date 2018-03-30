@@ -24,30 +24,40 @@ const main = (stream, options) => {
 		showCursor: false
 	}, options);
 
-	let prevLineCount = 0;
+	let prevOutput = [];
 
 	const render = function () {
 		if (!options.showCursor) {
 			cliCursor.hide();
 		}
 
-		let out = [].join.call(arguments, ' ') + '\n';
-		out = wrapAnsi(out, getWidth(stream), {
+		const thisOutput = [].join.call(arguments, ' ').split('\n').concat(['']);
+		let firstDiff = 0;
+		// If the new output is shorter than the old, we need to redraw every line
+		// (output will "scroll" down); otherwise, find the first differing line
+		// and start there.
+		if (thisOutput.length >= prevOutput.length) {
+			while (firstDiff < thisOutput.length &&
+				thisOutput[firstDiff] === prevOutput[firstDiff]) {
+				firstDiff++;
+			}
+		}
+		const out = wrapAnsi(thisOutput.slice(firstDiff).join('\n'), getWidth(stream), {
 			trim: false,
 			hard: true,
 			wordWrap: false
 		});
-		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
-		prevLineCount = out.split('\n').length;
+		stream.write(ansiEscapes.eraseLines(prevOutput.length - firstDiff) + out);
+		prevOutput = thisOutput;
 	};
 
 	render.clear = () => {
-		stream.write(ansiEscapes.eraseLines(prevLineCount));
-		prevLineCount = 0;
+		stream.write(ansiEscapes.eraseLines(prevOutput.length));
+		prevOutput = [];
 	};
 
 	render.done = () => {
-		prevLineCount = 0;
+		prevOutput = [];
 
 		if (!options.showCursor) {
 			cliCursor.show();
