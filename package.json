@@ -13,7 +13,7 @@
     "node": ">=4"
   },
   "scripts": {
-    "test": "xo && node test.js"
+    "test": "xo && ava"
   },
   "files": [
     "index.js"
@@ -42,6 +42,8 @@
     "wrap-ansi": "^3.0.1"
   },
   "devDependencies": {
+    "ava": "^1.0.0-beta.3",
+    "terminal.js": "^1.0.10",
     "xo": "*"
   }
 }
