@@ -3,8 +3,8 @@ const test = require('ava');
 const Terminal = require('terminal.js');
 const logUpdate = require('.');
 
-const setup = opts => {
-	const terminal = new Terminal(opts);
+const setup = options => {
+	const terminal = new Terminal(options);
 	terminal.state.setMode('crlf', true);
 	const log = logUpdate.create(terminal);
 	return {terminal, log};
@@ -103,6 +103,7 @@ test('lots of updates', t => {
 			`[2] ${(i ** 2) + (10 * i) - 100}`
 		].join('\n'));
 	}
+
 	t.is(terminal.state.getLine(0).str, '[1] 970310');
 	t.is(terminal.state.getLine(1).str, '[2] 10691');
 });

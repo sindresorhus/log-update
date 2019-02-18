@@ -17,6 +17,7 @@ $ npm install log-update
 
 ```js
 const logUpdate = require('log-update');
+
 const frames = ['-', '\\', '|', '/'];
 let i = 0;
 
@@ -36,7 +37,7 @@ setInterval(() => {
 
 ## API
 
-### logUpdate(text, ...)
+### logUpdate(text…)
 
 Log to stdout.
 
@@ -49,7 +50,7 @@ Clear the logged output.
 Persist the logged output.<br>
 Useful if you want to start a new log session below the current one.
 
-### logUpdate.stderr(text, ...)
+### logUpdate.stderr(text…)
 
 Log to stderr.
 

@@ -7,13 +7,11 @@ let i = 0;
 setInterval(() => {
 	const frame = frames[i = ++i % frames.length];
 
-	logUpdate(
-`
+	logUpdate(`
         ♥♥
    ${frame} unicorns ${frame}
         ♥♥
-`
-	);
+`);
 }, 80);
 
 // Run it with:

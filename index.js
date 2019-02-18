@@ -4,7 +4,7 @@ const cliCursor = require('cli-cursor');
 const wrapAnsi = require('wrap-ansi');
 
 const getWidth = stream => {
-	const columns = stream.columns;
+	const {columns} = stream;
 
 	if (!columns) {
 		return 80;
@@ -26,12 +26,12 @@ const main = (stream, options) => {
 
 	let prevLineCount = 0;
 
-	const render = function () {
+	const render = (...args) => {
 		if (!options.showCursor) {
 			cliCursor.hide();
 		}
 
-		let out = [].join.call(arguments, ' ') + '\n';
+		let out = args.join(' ') + '\n';
 		out = wrapAnsi(out, getWidth(stream), {
 			trim: false,
 			hard: true,
