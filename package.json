@@ -13,10 +13,11 @@
 		"node": ">=6"
 	},
 	"scripts": {
-		"test": "xo && ava"
+		"test": "xo && ava && tsd-check"
 	},
 	"files": [
-		"index.js"
+		"index.js",
+		"index.d.ts"
 	],
 	"keywords": [
 		"log",
@@ -42,8 +43,10 @@
 		"wrap-ansi": "^5.0.0"
 	},
 	"devDependencies": {
+		"@types/node": "^11.10.4",
 		"ava": "^1.2.1",
 		"terminal.js": "^1.0.10",
+		"tsd-check": "^0.3.0",
 		"xo": "^0.24.0"
 	}
 }
