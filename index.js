@@ -58,5 +58,6 @@ const main = (stream, options) => {
 };
 
 module.exports = main(process.stdout);
+module.exports.default = module.exports;
 module.exports.stderr = main(process.stderr);
 module.exports.create = main;
