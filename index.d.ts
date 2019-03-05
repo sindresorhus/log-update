@@ -1,13 +1,6 @@
 /// <reference types="node"/>
 import {Writable} from 'stream';
 
-/**
- * Get a `logUpdate` method that logs to the specified stream.
- *
- * @param stream - The stream to log to.
- */
-export function create(stream: Writable, options?: Options): LogUpdate;
-
 export interface LogUpdate {
 	(...text: string[]): void;
 
@@ -22,36 +15,6 @@ export interface LogUpdate {
 	done(): void;
 }
 
-/**
- * Log to `stdout` by overwriting the previous output in the terminal.
- *
- * @param text - The text to log to `stdout`.
- */
-declare const logUpdate: LogUpdate & {
-	/**
-	 * Log to `stderr` by overwriting the previous output in the terminal.
-	 *
-	 * @param text - The text to log to `stderr`.
-	 */
-	stderr: LogUpdate;
-
-	/**
-	 * Get a `logUpdate` method that logs to the specified stream.
-	 *
-	 * @param stream - The stream to log to.
-	 */
-	create: typeof create;
-};
-
-export default logUpdate;
-
-/**
- * Log to `stderr` by overwriting the previous output in the terminal.
- *
- * @param text - The text to log to `stderr`.
- */
-export const stderr: LogUpdate;
-
 export interface Options {
 	/**
 	 * Show the cursor. This can be useful when a CLI accepts input from a user.
@@ -65,3 +28,26 @@ export interface Options {
 	 */
 	readonly showCursor?: boolean;
 }
+
+/**
+ * Log to `stdout` by overwriting the previous output in the terminal.
+ *
+ * @param text - The text to log to `stdout`.
+ */
+declare const logUpdate: LogUpdate & {
+	/**
+	 * Log to `stderr` by overwriting the previous output in the terminal.
+	 *
+	 * @param text - The text to log to `stderr`.
+	 */
+	readonly stderr: LogUpdate;
+
+	/**
+	 * Get a `logUpdate` method that logs to the specified stream.
+	 *
+	 * @param stream - The stream to log to.
+	 */
+	readonly create: (stream: Writable, options?: Options) => LogUpdate;
+};
+
+export default logUpdate;
