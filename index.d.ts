@@ -1,6 +1,13 @@
 /// <reference types="node"/>
 import {Writable} from 'stream';
 
+/**
+ * Get a `logUpdate` method that logs to the specified stream.
+ *
+ * @param stream - The stream to log to.
+ */
+export function create(stream: Writable, options?: Options): LogUpdate;
+
 export interface LogUpdate {
 	(...text: string[]): void;
 
@@ -20,7 +27,21 @@ export interface LogUpdate {
  *
  * @param text - The text to log to `stdout`.
  */
-declare const logUpdate: LogUpdate;
+declare const logUpdate: LogUpdate & {
+	/**
+	 * Log to `stderr` by overwriting the previous output in the terminal.
+	 *
+	 * @param text - The text to log to `stderr`.
+	 */
+	stderr: LogUpdate;
+
+	/**
+	 * Get a `logUpdate` method that logs to the specified stream.
+	 *
+	 * @param stream - The stream to log to.
+	 */
+	create: typeof create;
+};
 
 export default logUpdate;
 
@@ -39,15 +60,8 @@ export interface Options {
 	 *
 	 * // Write output but don't hide the cursor
 	 * const log = logUpdate.create(process.stdout, {
-	 *     showCursor: true
+	 * 	showCursor: true
 	 * });
 	 */
 	readonly showCursor?: boolean;
 }
-
-/**
- * Get a `logUpdate` method that logs to the specified stream.
- *
- * @param stream The stream to log to.
- */
-export function create(stream: Writable, options?: Options): LogUpdate;
