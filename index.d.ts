@@ -1,5 +1,4 @@
 /// <reference types="node"/>
-import {Writable as WritableStream} from 'stream';
 
 export interface LogUpdate {
 	(...text: string[]): void;
@@ -47,7 +46,7 @@ declare const logUpdate: LogUpdate & {
 	 *
 	 * @param stream - The stream to log to.
 	 */
-	readonly create: (stream: WritableStream, options?: Options) => LogUpdate;
+	readonly create: (stream: NodeJS.WritableStream, options?: Options) => LogUpdate;
 };
 
 export default logUpdate;
