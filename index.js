@@ -2,6 +2,9 @@
 const ansiEscapes = require('ansi-escapes');
 const cliCursor = require('cli-cursor');
 const wrapAnsi = require('wrap-ansi');
+const sliceAnsi = require('slice-ansi');
+
+const defaultTerminalHeight = 24;
 
 const getWidth = stream => {
 	const {columns} = stream;
@@ -11,6 +14,21 @@ const getWidth = stream => {
 	}
 
 	return columns;
+};
+
+const fitToTerminalHeight = (stream, text) => {
+	const terminalHeight = stream.rows || defaultTerminalHeight;
+	const lines = text.split('\n');
+
+	const toRemove = lines.length - terminalHeight;
+	if (toRemove <= 0) {
+		return text;
+	}
+
+	return sliceAnsi(
+		text,
+		lines.slice(0, toRemove).join('\n').length + 1,
+		text.length);
 };
 
 const main = (stream, {showCursor = false} = {}) => {
@@ -24,6 +42,7 @@ const main = (stream, {showCursor = false} = {}) => {
 		}
 
 		let output = args.join(' ') + '\n';
+		output = fitToTerminalHeight(stream, output);
 		const width = getWidth(stream);
 		if (output === previousOutput && previousWidth === width) {
 			return;
