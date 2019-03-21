@@ -19,6 +19,32 @@ const getWidth = stream => {
 	return columns;
 };
 
+const getHeight = stream => {
+	const {rows} = stream;
+
+	if (!rows) {
+		return 20;
+	}
+
+	return rows;
+};
+
+const cropLinesFromFront = (text, noOfLines) => {
+	const lines = text.split('\n');
+	return lines.slice(noOfLines).join('\n');
+};
+
+const fitToTerminalHeight = (stream, text) => {
+	const terminalHeight = getHeight(stream);
+	const lineCount = text.split('\n').length;
+
+	if (lineCount > terminalHeight) {
+		return cropLinesFromFront(text, (lineCount - terminalHeight));
+	}
+
+	return text;
+};
+
 const main = (stream, options) => {
 	options = Object.assign({
 		showCursor: false
@@ -32,6 +58,8 @@ const main = (stream, options) => {
 		}
 
 		let out = args.join(' ') + '\n';
+		out = fitToTerminalHeight(stream, out);
+
 		out = wrapAnsi(out, getWidth(stream), {
 			trim: false,
 			hard: true,
