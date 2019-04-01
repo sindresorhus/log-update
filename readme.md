@@ -73,6 +73,8 @@ Default: `false`
 Show the cursor. This can be useful when a CLI accepts input from a user.
 
 ```js
+const logUpdate = require('log-update');
+
 // Write output but don't hide the cursor
 const log = logUpdate.create(process.stdout, {
 	showCursor: true

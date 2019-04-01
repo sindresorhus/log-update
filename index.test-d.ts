@@ -1,4 +1,4 @@
-import logUpdate from '.';
+import logUpdate = require('.');
 
 logUpdate(`
         ♥♥
