@@ -10,12 +10,6 @@ const getWidth = stream => {
 		return 80;
 	}
 
-	// Windows appears to wrap a character early
-	// I hate Windows so much
-	if (process.platform === 'win32') {
-		return columns - 1;
-	}
-
 	return columns;
 };
 
