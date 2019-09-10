@@ -57,7 +57,7 @@ Log to stderr.
 ### logUpdate.stderr.clear()
 ### logUpdate.stderr.done()
 
-### logUpdate.create(stream, [options])
+### logUpdate.create(stream, options?)
 
 Get a `logUpdate` method that logs to the specified stream.
 
@@ -89,6 +89,14 @@ const log = logUpdate.create(process.stdout, {
 - [speed-test](https://github.com/sindresorhus/speed-test) - Uses this module to render a [spinner](https://github.com/sindresorhus/elegant-spinner)
 
 
-## License
+---
 
-MIT © [Sindre Sorhus](https://sindresorhus.com)
+<div align="center">
+	<b>
+		<a href="https://tidelift.com/subscription/pkg/npm-log-update?utm_source=npm-log-update&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
+	</b>
+	<br>
+	<sub>
+		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
+	</sub>
+</div>
