@@ -14,9 +14,10 @@ const getWidth = stream => {
 };
 
 const main = (stream, options) => {
-	options = Object.assign({
-		showCursor: false
-	}, options);
+	options = {
+		showCursor: false,
+		...options
+	};
 
 	let prevLineCount = 0;
 
