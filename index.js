@@ -47,11 +47,13 @@ const main = (stream, options) => {
 	render.clear = () => {
 		stream.write(ansiEscapes.eraseLines(prevLineCount));
 		prevOut = '';
+		prevWidth = getWidth(stream);
 		prevLineCount = 0;
 	};
 
 	render.done = () => {
 		prevOut = '';
+		prevWidth = getWidth(stream);
 		prevLineCount = 0;
 
 		if (!options.showCursor) {
