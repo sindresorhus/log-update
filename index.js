@@ -19,6 +19,7 @@ const main = (stream, options) => {
 	}, options);
 
 	let prevLineCount = 0;
+	let prevWidth = getWidth(stream);
 	let prevOut = '';
 
 	const render = (...args) => {
@@ -27,12 +28,14 @@ const main = (stream, options) => {
 		}
 
 		let out = args.join(' ') + '\n';
-		if (out === prevOut) {
+		const width = getWidth(stream);
+		if (out === prevOut && prevWidth === width) {
 			return;
 		}
 
 		prevOut = out;
-		out = wrapAnsi(out, getWidth(stream), {
+		prevWidth = width;
+		out = wrapAnsi(out, width, {
 			trim: false,
 			hard: true,
 			wordWrap: false
