@@ -19,6 +19,8 @@ const main = (stream, options) => {
 	}, options);
 
 	let prevLineCount = 0;
+	let prevWidth = getWidth(stream);
+	let prevOut = '';
 
 	const render = (...args) => {
 		if (!options.showCursor) {
@@ -26,7 +28,14 @@ const main = (stream, options) => {
 		}
 
 		let out = args.join(' ') + '\n';
-		out = wrapAnsi(out, getWidth(stream), {
+		const width = getWidth(stream);
+		if (out === prevOut && prevWidth === width) {
+			return;
+		}
+
+		prevOut = out;
+		prevWidth = width;
+		out = wrapAnsi(out, width, {
 			trim: false,
 			hard: true,
 			wordWrap: false
@@ -37,10 +46,14 @@ const main = (stream, options) => {
 
 	render.clear = () => {
 		stream.write(ansiEscapes.eraseLines(prevLineCount));
+		prevOut = '';
+		prevWidth = getWidth(stream);
 		prevLineCount = 0;
 	};
 
 	render.done = () => {
+		prevOut = '';
+		prevWidth = getWidth(stream);
 		prevLineCount = 0;
 
 		if (!options.showCursor) {
