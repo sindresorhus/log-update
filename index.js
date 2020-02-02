@@ -18,43 +18,43 @@ const main = (stream, options) => {
 		showCursor: false
 	}, options);
 
-	let prevLineCount = 0;
-	let prevWidth = getWidth(stream);
-	let prevOut = '';
+	let previousLineCount = 0;
+	let previousWidth = getWidth(stream);
+	let previousOutput = '';
 
 	const render = (...args) => {
 		if (!options.showCursor) {
 			cliCursor.hide();
 		}
 
-		let out = args.join(' ') + '\n';
+		let output = args.join(' ') + '\n';
 		const width = getWidth(stream);
-		if (out === prevOut && prevWidth === width) {
+		if (output === previousOutput && previousWidth === width) {
 			return;
 		}
 
-		prevOut = out;
-		prevWidth = width;
-		out = wrapAnsi(out, width, {
+		previousOutput = output;
+		previousWidth = width;
+		output = wrapAnsi(output, width, {
 			trim: false,
 			hard: true,
 			wordWrap: false
 		});
-		stream.write(ansiEscapes.eraseLines(prevLineCount) + out);
-		prevLineCount = out.split('\n').length;
+		stream.write(ansiEscapes.eraseLines(previousLineCount) + output);
+		previousLineCount = output.split('\n').length;
 	};
 
 	render.clear = () => {
-		stream.write(ansiEscapes.eraseLines(prevLineCount));
-		prevOut = '';
-		prevWidth = getWidth(stream);
-		prevLineCount = 0;
+		stream.write(ansiEscapes.eraseLines(previousLineCount));
+		previousOutput = '';
+		previousWidth = getWidth(stream);
+		previousLineCount = 0;
 	};
 
 	render.done = () => {
-		prevOut = '';
-		prevWidth = getWidth(stream);
-		prevLineCount = 0;
+		previousOutput = '';
+		previousWidth = getWidth(stream);
+		previousLineCount = 0;
 
 		if (!options.showCursor) {
 			cliCursor.show();

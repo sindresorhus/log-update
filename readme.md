@@ -5,13 +5,11 @@
 
 ![](screenshot.gif)
 
-
 ## Install
 
 ```
 $ npm install log-update
 ```
-
 
 ## Usage
 
@@ -33,7 +31,6 @@ setInterval(() => {
 	);
 }, 80);
 ```
-
 
 ## API
 
@@ -63,11 +60,11 @@ Get a `logUpdate` method that logs to the specified stream.
 
 #### options
 
-Type: `Object`
+Type: `object`
 
 ##### showCursor
 
-Type: `boolean`<br>
+Type: `boolean`\
 Default: `false`
 
 Show the cursor. This can be useful when a CLI accepts input from a user.
@@ -81,13 +78,11 @@ const log = logUpdate.create(process.stdout, {
 });
 ```
 
-
 ## Examples
 
 - [listr](https://github.com/SamVerschueren/listr) - Uses this module to render an interactive task list
 - [ora](https://github.com/sindresorhus/ora) - Uses this module to render awesome spinners
 - [speed-test](https://github.com/sindresorhus/speed-test) - Uses this module to render a [spinner](https://github.com/sindresorhus/elegant-spinner)
-
 
 ---
 
