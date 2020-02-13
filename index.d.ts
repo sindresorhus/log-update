@@ -75,9 +75,6 @@ declare const logUpdate: logUpdate.LogUpdate & {
 		stream: NodeJS.WritableStream,
 		options?: logUpdate.Options
 	) => logUpdate.LogUpdate;
-
-	// TODO: Remove this for the next major release
-	default: typeof logUpdate;
 };
 
 export = logUpdate;

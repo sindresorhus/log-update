@@ -13,17 +13,13 @@ const getWidth = stream => {
 	return columns;
 };
 
-const main = (stream, options) => {
-	options = Object.assign({
-		showCursor: false
-	}, options);
-
+const main = (stream, {showCursor = false} = {}) => {
 	let previousLineCount = 0;
 	let previousWidth = getWidth(stream);
 	let previousOutput = '';
 
 	const render = (...args) => {
-		if (!options.showCursor) {
+		if (!showCursor) {
 			cliCursor.hide();
 		}
 
@@ -56,7 +52,7 @@ const main = (stream, options) => {
 		previousWidth = getWidth(stream);
 		previousLineCount = 0;
 
-		if (!options.showCursor) {
+		if (!showCursor) {
 			cliCursor.show();
 		}
 	};
@@ -65,7 +61,5 @@ const main = (stream, options) => {
 };
 
 module.exports = main(process.stdout);
-// TODO: Remove this for the next major release
-module.exports.default = module.exports;
 module.exports.stderr = main(process.stderr);
 module.exports.create = main;
