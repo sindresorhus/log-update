@@ -34,6 +34,15 @@ test('output a wrapped line', t => {
 	t.is(terminal.state.getLine(1).str, 'to the next line');
 });
 
+test('output beyond terminal height', t => {
+	const {terminal, log} = setup({rows: 3, columns: 20});
+
+	log('line 1\nline 2\nline 3');
+	t.is(terminal.state.getLine(0).str, 'line 2');
+	t.is(terminal.state.getLine(1).str, 'line 3');
+	t.is(terminal.state.getLine(2).str, '');
+});
+
 test('growing output', t => {
 	const {terminal, log} = setup({rows: 4, columns: 20});
 
