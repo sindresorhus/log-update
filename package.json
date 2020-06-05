@@ -41,7 +41,7 @@
 	"dependencies": {
 		"ansi-escapes": "^4.3.0",
 		"cli-cursor": "^3.1.0",
-		"slice-ansi": "^4.0.0",
+		"last-item": "^1.0.0",
 		"wrap-ansi": "^6.2.0"
 	},
 	"devDependencies": {

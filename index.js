@@ -2,7 +2,7 @@
 const ansiEscapes = require('ansi-escapes');
 const cliCursor = require('cli-cursor');
 const wrapAnsi = require('wrap-ansi');
-const sliceAnsi = require('slice-ansi');
+const lastItem = require('last-item');
 
 const defaultTerminalHeight = 24;
 
@@ -18,17 +18,18 @@ const getWidth = stream => {
 
 const fitToTerminalHeight = (stream, text) => {
 	const terminalHeight = stream.rows || defaultTerminalHeight;
-	const lines = text.split('\n');
+	let lines = text.split('\n');
+
+	if (lastItem(lines) === '') {
+		lines = lines.slice(0, -1);
+	}
 
 	const toRemove = lines.length - terminalHeight;
 	if (toRemove <= 0) {
 		return text;
 	}
 
-	return sliceAnsi(
-		text,
-		lines.slice(0, toRemove).join('\n').length + 1,
-		text.length);
+	return text.slice(lines.slice(0, toRemove).join('\n').length + 1);
 };
 
 const main = (stream, {showCursor = false} = {}) => {
