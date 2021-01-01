@@ -1,4 +1,4 @@
-# log-update [![Build Status](https://travis-ci.org/sindresorhus/log-update.svg?branch=master)](https://travis-ci.org/sindresorhus/log-update)
+# log-update
 
 > Log by overwriting the previous output in the terminal.<br>
 > Useful for rendering progress bars, animations, etc.
