@@ -6,11 +6,11 @@ const sliceAnsi = require('slice-ansi');
 
 const defaultTerminalHeight = 24;
 
-const getWidth = stream => {
+const getWidth = (stream, defaultColumns) => {
 	const {columns} = stream;
 
 	if (!columns) {
-		return 80;
+		return defaultColumns;
 	}
 
 	return columns;
@@ -31,9 +31,9 @@ const fitToTerminalHeight = (stream, text) => {
 		text.length);
 };
 
-const main = (stream, {showCursor = false} = {}) => {
+const main = (stream, {showCursor = false, columns = 80} = {}) => {
 	let previousLineCount = 0;
-	let previousWidth = getWidth(stream);
+	let previousWidth = getWidth(stream, columns);
 	let previousOutput = '';
 
 	const render = (...args) => {

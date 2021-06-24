@@ -78,6 +78,22 @@ const log = logUpdate.create(process.stdout, {
 });
 ```
 
+##### columns
+
+Type: `number`\
+Default: `80`
+
+Default columns of stream.
+
+```js
+const logUpdate = require('log-update');
+
+// The max width of columns will be set to 120
+const log = logUpdate.create(process.stdout, {
+	columns: 120
+});
+```
+
 ## Examples
 
 - [listr](https://github.com/SamVerschueren/listr) - Uses this module to render an interactive task list
