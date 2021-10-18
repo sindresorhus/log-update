@@ -1,12 +1,11 @@
-'use strict';
-const test = require('ava');
-const Terminal = require('terminal.js');
-const logUpdate = require('.');
+import test from 'ava';
+import Terminal from 'terminal.js';
+import {createLogUpdate} from './index.js';
 
 const setup = options => {
 	const terminal = new Terminal(options);
 	terminal.state.setMode('crlf', true);
-	const log = logUpdate.create(terminal);
+	const log = createLogUpdate(terminal);
 	return {terminal, log};
 };
 
@@ -109,7 +108,7 @@ test('lots of updates', t => {
 	for (let i = 0; i < 100; i++) {
 		log([
 			`[1] ${(i ** 3) + 11}`,
-			`[2] ${(i ** 2) + (10 * i) - 100}`
+			`[2] ${(i ** 2) + (10 * i) - 100}`,
 		].join('\n'));
 	}
 

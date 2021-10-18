@@ -1,26 +1,26 @@
 # log-update
 
-> Log by overwriting the previous output in the terminal.<br>
+> Log by overwriting the previous output in the terminal.\
 > Useful for rendering progress bars, animations, etc.
 
 ![](screenshot.gif)
 
 ## Install
 
-```
-$ npm install log-update
+```sh
+npm install log-update
 ```
 
 ## Usage
 
 ```js
-const logUpdate = require('log-update');
+import logUpdate from 'log-update';
 
 const frames = ['-', '\\', '|', '/'];
-let i = 0;
+let index = 0;
 
 setInterval(() => {
-	const frame = frames[i = ++i % frames.length];
+	const frame = frames[index = ++index % frames.length];
 
 	logUpdate(
 `
@@ -44,17 +44,18 @@ Clear the logged output.
 
 ### logUpdate.done()
 
-Persist the logged output.<br>
+Persist the logged output.
+
 Useful if you want to start a new log session below the current one.
 
-### logUpdate.stderr(text…)
+### logUpdateStderr(text…)
 
 Log to stderr.
 
-### logUpdate.stderr.clear()
-### logUpdate.stderr.done()
+### logUpdateStderr.clear()
+### logUpdateStderr.done()
 
-### logUpdate.create(stream, options?)
+### createLogUpdate(stream, options?)
 
 Get a `logUpdate` method that logs to the specified stream.
 
@@ -70,7 +71,7 @@ Default: `false`
 Show the cursor. This can be useful when a CLI accepts input from a user.
 
 ```js
-const logUpdate = require('log-update');
+import logUpdate from 'log-update';
 
 // Write output but don't hide the cursor
 const log = logUpdate.create(process.stdout, {

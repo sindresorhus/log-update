@@ -1,8 +1,8 @@
-'use strict';
-const ansiEscapes = require('ansi-escapes');
-const cliCursor = require('cli-cursor');
-const wrapAnsi = require('wrap-ansi');
-const sliceAnsi = require('slice-ansi');
+import process from 'node:process';
+import ansiEscapes from 'ansi-escapes';
+import cliCursor from 'cli-cursor';
+import wrapAnsi from 'wrap-ansi';
+import sliceAnsi from 'slice-ansi';
 
 const defaultTerminalHeight = 24;
 
@@ -31,17 +31,17 @@ const fitToTerminalHeight = (stream, text) => {
 		text.length);
 };
 
-const main = (stream, {showCursor = false} = {}) => {
+export function createLogUpdate(stream, {showCursor = false} = {}) {
 	let previousLineCount = 0;
 	let previousWidth = getWidth(stream);
 	let previousOutput = '';
 
-	const render = (...args) => {
+	const render = (...arguments_) => {
 		if (!showCursor) {
 			cliCursor.hide();
 		}
 
-		let output = args.join(' ') + '\n';
+		let output = arguments_.join(' ') + '\n';
 		output = fitToTerminalHeight(stream, output);
 		const width = getWidth(stream);
 		if (output === previousOutput && previousWidth === width) {
@@ -53,7 +53,7 @@ const main = (stream, {showCursor = false} = {}) => {
 		output = wrapAnsi(output, width, {
 			trim: false,
 			hard: true,
-			wordWrap: false
+			wordWrap: false,
 		});
 		stream.write(ansiEscapes.eraseLines(previousLineCount) + output);
 		previousLineCount = output.split('\n').length;
@@ -77,8 +77,9 @@ const main = (stream, {showCursor = false} = {}) => {
 	};
 
 	return render;
-};
+}
 
-module.exports = main(process.stdout);
-module.exports.stderr = main(process.stderr);
-module.exports.create = main;
+const logUpdate = createLogUpdate(process.stdout);
+export default logUpdate;
+
+export const logUpdateStderr = createLogUpdate(process.stderr);

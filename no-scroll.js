@@ -1,5 +1,4 @@
-'use strict';
-const logUpdate = require('.');
+import logUpdate from './index.js';
 
 let y = 0;
 let dy = 1.2;
@@ -19,7 +18,7 @@ setInterval(() => {
 
 	const iy = Math.floor(y);
 
-	logUpdate(new Array(HEIGHT).fill().map((_, i) => `${i === iy ? '⇛' : ' '}${i}`).join('\n'));
+	logUpdate(Array.from({length: HEIGHT}).fill().map((_, i) => `${i === iy ? '⇛' : ' '}${i}`).join('\n'));
 }, 80);
 
 // Run it with:

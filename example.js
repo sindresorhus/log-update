@@ -1,11 +1,10 @@
-'use strict';
-const logUpdate = require('.');
+import logUpdate from './index.js';
 
 const frames = ['-', '\\', '|', '/'];
-let i = 0;
+let index = 0;
 
 setInterval(() => {
-	const frame = frames[i = ++i % frames.length];
+	const frame = frames[index = ++index % frames.length];
 
 	logUpdate(`
         ♥♥

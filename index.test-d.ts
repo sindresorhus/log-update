@@ -1,4 +1,5 @@
-import logUpdate = require('.');
+import process from 'node:process';
+import logUpdate, {logUpdateStderr, createLogUpdate} from './index.js';
 
 logUpdate(`
         ♥♥
@@ -9,12 +10,12 @@ logUpdate(`
 logUpdate.clear();
 logUpdate.done();
 
-logUpdate.stderr('oh', 'my', 'oh', 'my');
-logUpdate.stderr.clear();
-logUpdate.stderr.done();
+logUpdateStderr('oh', 'my', 'oh', 'my');
+logUpdateStderr.clear();
+logUpdateStderr.done();
 
-const logStdOut = logUpdate.create(process.stdout);
-logUpdate.create(process.stdout, {showCursor: true});
+const logStdOut = createLogUpdate(process.stdout);
+createLogUpdate(process.stdout, {showCursor: true});
 logStdOut('oh', 'my', 'oh', 'my');
 logStdOut.clear();
 logStdOut.done();
