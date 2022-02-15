@@ -17,6 +17,12 @@ const int = setInterval(() => {
 }, 100);
 
 setTimeout(logUpdate.done, 1000);
+
+setTimeout(() => {
+	console.log('some log');
+	console.error('some error');
+}, 2000);
+
 setTimeout(logUpdate.done, 3000);
 
 setTimeout(() => {
