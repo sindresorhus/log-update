@@ -4,45 +4,76 @@ var wrapAnsi = require('wrap-ansi');
 var cliCursor = require('./cli-cursor');
 
 
+function isStdStream (stream) {
+	return stream === process.stdout || stream === process.stderr;
+}
+
 function main (stream) {
 	var prevLineCount = 0;
+	var context       = { stream };
 
-	var streamWrite = stream.write;
-
-	var overridenWrite = function (...args) {
+	function overriddenWrite (...args) {
 		if (prevLineCount)
 			render.clear();
 
-		return streamWrite.apply(this, args);
+		if (this === process.stderr)
+			return context.stderrWrite.apply(this, args);
+		else 
+			return context.stdoutWrite.apply(this, args); 
 	};
+
+	function overrideStdStreams (context) {
+		if (!context.streamWrite && stream.write !== overriddenWrite)
+			context.streamWrite = context.stream.write;
+		
+		if (!isStdStream(stream))
+			return context;
+
+		if (process.stderr.write !== overriddenWrite) {
+			context.stderrWrite  = process.stderr.write;
+			process.stderr.write = overriddenWrite;
+		}
+	
+		if (process.stdout.write !== overriddenWrite) {
+			context.stdoutWrite  = process.stdout.write;
+			process.stdout.write = overriddenWrite;
+		}
+	
+		return context;
+	}
+	
+	function restoreStdStreams (context) {
+		if (context.stderrWrite)
+			process.stderr.write = context.stderrWrite;
+
+		if (context.stdoutWrite)	
+			process.stdout.write = context.stdoutWrite;
+	}
 
 	var render = function () {
 		cliCursor.hide();
 
-		if (stream.write !== overridenWrite) {
-			streamWrite  = stream.write;
-			stream.write = overridenWrite
-		}
+		overrideStdStreams(context)
 		  
 		var out = [].join.call(arguments, ' ') + '\n';
 
 		out = wrapAnsi(out, process.stdout.columns || 80, {wordWrap: false});
 
-		streamWrite.call(stream, ansiEscapes.eraseLines(prevLineCount) + out);
+		context.streamWrite.call(stream, ansiEscapes.eraseLines(prevLineCount) + out);
 		
 		prevLineCount = out.split('\n').length;
 	};
 
 	render.clear = function () {
-		streamWrite.call(stream, ansiEscapes.eraseLines(prevLineCount));
+		context.streamWrite.call(stream, ansiEscapes.eraseLines(prevLineCount));
 
 		prevLineCount = 0;
 	};
 
 	render.done = function () {
 		prevLineCount = 0;
-		stream.write  = streamWrite;
 
+		restoreStdStreams(context);
 		cliCursor.show();
 	};
 
