@@ -1,6 +1,6 @@
 {
   "name": "log-update-async-hook",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "log-update fork that uses async-exit-hook internally",
   "license": "MIT",
   "repository": "AndreyBelym/log-update-async-hook",
