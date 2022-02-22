@@ -10,7 +10,7 @@ function isStdStream (stream) {
 
 function main (stream) {
 	var prevLineCount = 0;
-	var context       = { stream };
+	var context       = { stream, streamWrite: stream.write };
 
 	function overriddenWrite (...args) {
 		if (prevLineCount)
@@ -22,10 +22,7 @@ function main (stream) {
 			return context.stdoutWrite.apply(this, args); 
 	};
 
-	function overrideStdStreams (context) {
-		if (!context.streamWrite && stream.write !== overriddenWrite)
-			context.streamWrite = context.stream.write;
-		
+	function overrideStdStreams (context) {	
 		if (!isStdStream(stream))
 			return context;
 
