@@ -10,10 +10,10 @@ function isStdStream (stream) {
 
 function main (stream) {
 	var prevLineCount = 0;
-	var context       = { stream, streamWrite: stream.write };
+	var context       = { stream, streamWrite: stream.write, enabled: false };
 
 	function overriddenWrite (...args) {
-		if (prevLineCount)
+		if (context.enabled && prevLineCount)
 			render.clear();
 
 		if (this === process.stderr)
@@ -38,19 +38,11 @@ function main (stream) {
 	
 		return context;
 	}
-	
-	function restoreStdStreams (context) {
-		if (context.stderrWrite)
-			process.stderr.write = context.stderrWrite;
-
-		if (context.stdoutWrite)	
-			process.stdout.write = context.stdoutWrite;
-	}
 
 	var render = function () {
 		cliCursor.hide();
 
-		overrideStdStreams(context)
+		context.enabled = true;
 		  
 		var out = [].join.call(arguments, ' ') + '\n';
 
@@ -70,9 +62,12 @@ function main (stream) {
 	render.done = function () {
 		prevLineCount = 0;
 
-		restoreStdStreams(context);
+		context.enabled = false;
+
 		cliCursor.show();
 	};
+
+	overrideStdStreams(context);
 
 	return render;
 }
