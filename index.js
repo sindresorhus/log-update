@@ -3,6 +3,7 @@ import ansiEscapes from 'ansi-escapes';
 import cliCursor from 'cli-cursor';
 import wrapAnsi from 'wrap-ansi';
 import sliceAnsi from 'slice-ansi';
+import stripAnsi from 'strip-ansi';
 
 const defaultTerminalHeight = 24;
 
@@ -27,8 +28,8 @@ const fitToTerminalHeight = (stream, text) => {
 
 	return sliceAnsi(
 		text,
-		lines.slice(0, toRemove).join('\n').length + 1,
-		text.length);
+		stripAnsi(lines.slice(0, toRemove).join('\n')).length + 1,
+	);
 };
 
 export function createLogUpdate(stream, {showCursor = false} = {}) {
