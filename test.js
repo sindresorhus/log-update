@@ -4,6 +4,8 @@ import {createLogUpdate} from './index.js';
 
 const setup = options => {
 	const terminal = new Terminal(options);
+	terminal.rows = options.rows;
+	terminal.columns = options.columns;
 	terminal.state.setMode('crlf', true);
 	const log = createLogUpdate(terminal);
 	return {terminal, log};
