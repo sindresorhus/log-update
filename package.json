@@ -44,6 +44,7 @@
 		"ansi-escapes": "^5.0.0",
 		"cli-cursor": "^4.0.0",
 		"slice-ansi": "^5.0.0",
+		"strip-ansi": "^7.0.1",
 		"wrap-ansi": "^8.0.1"
 	},
 	"devDependencies": {

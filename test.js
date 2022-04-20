@@ -4,6 +4,8 @@ import {createLogUpdate} from './index.js';
 
 const setup = options => {
 	const terminal = new Terminal(options);
+	terminal.rows = options.rows;
+	terminal.columns = options.columns;
 	terminal.state.setMode('crlf', true);
 	const log = createLogUpdate(terminal);
 	return {terminal, log};
@@ -37,6 +39,24 @@ test('output beyond terminal height', t => {
 	const {terminal, log} = setup({rows: 3, columns: 20});
 
 	log('line 1\nline 2\nline 3');
+	t.is(terminal.state.getLine(0).str, 'line 2');
+	t.is(terminal.state.getLine(1).str, 'line 3');
+	t.is(terminal.state.getLine(2).str, '');
+});
+
+test('output beyond terminal height with color', t => {
+	const {terminal, log} = setup({rows: 3, columns: 20});
+
+	log('\u001B[32m√\u001B[39mline 1\nline 2\nline 3');
+	t.is(terminal.state.getLine(0).str, 'line 2');
+	t.is(terminal.state.getLine(1).str, 'line 3');
+	t.is(terminal.state.getLine(2).str, '');
+});
+
+test('output beyond terminal height with multi-line color', t => {
+	const {terminal, log} = setup({rows: 3, columns: 20});
+
+	log('\u001B[32m√line 1\nline 2\nline 3\u001B[39m');
 	t.is(terminal.state.getLine(0).str, 'line 2');
 	t.is(terminal.state.getLine(1).str, 'line 3');
 	t.is(terminal.state.getLine(2).str, '');
