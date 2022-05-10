@@ -71,10 +71,10 @@ Default: `false`
 Show the cursor. This can be useful when a CLI accepts input from a user.
 
 ```js
-import logUpdate from 'log-update';
+import { createLogUpdate } from 'log-update';
 
 // Write output but don't hide the cursor
-const log = logUpdate.create(process.stdout, {
+const log = createLogUpdate(process.stdout, {
 	showCursor: true
 });
 ```
