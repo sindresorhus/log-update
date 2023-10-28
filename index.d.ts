@@ -1,4 +1,4 @@
-export interface Options {
+export type Options = {
 	/**
 	Show the cursor. This can be useful when a CLI accepts input from a user.
 
@@ -13,7 +13,7 @@ export interface Options {
 	```
 	*/
 	readonly showCursor?: boolean;
-}
+};
 
 type LogUpdateMethods = {
 	/**

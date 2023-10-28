@@ -18,7 +18,7 @@ const getWidth = stream => {
 };
 
 const fitToTerminalHeight = (stream, text) => {
-	const terminalHeight = stream.rows || defaultTerminalHeight;
+	const terminalHeight = stream.rows ?? defaultTerminalHeight;
 	const lines = text.split('\n');
 
 	const toRemove = lines.length - terminalHeight;

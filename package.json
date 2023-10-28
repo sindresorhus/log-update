@@ -11,9 +11,12 @@
 		"url": "https://sindresorhus.com"
 	},
 	"type": "module",
-	"exports": "./index.js",
+	"exports": {
+		"types": "./index.d.ts",
+		"default": "./index.js"
+	},
 	"engines": {
-		"node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+		"node": ">=18"
 	},
 	"scripts": {
 		"test": "xo && ava && tsd"
@@ -41,18 +44,23 @@
 		"animation"
 	],
 	"dependencies": {
-		"ansi-escapes": "^5.0.0",
+		"ansi-escapes": "^6.2.0",
 		"cli-cursor": "^4.0.0",
-		"slice-ansi": "^5.0.0",
-		"strip-ansi": "^7.0.1",
-		"wrap-ansi": "^8.0.1"
+		"slice-ansi": "^7.0.0",
+		"strip-ansi": "^7.1.0",
+		"wrap-ansi": "^9.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^17.0.25",
-		"ava": "^4.2.0",
+		"@types/node": "^20.8.9",
+		"ava": "^5.3.1",
 		"terminal.js": "^1.0.11",
-		"tsd": "^0.20.0",
+		"tsd": "^0.29.0",
 		"wcwidth": "^1.0.1",
-		"xo": "^0.48.0"
+		"xo": "^0.56.0"
+	},
+	"xo": {
+		"rules": {
+			"@typescript-eslint/no-unsafe-argument": "off"
+		}
 	}
 }
