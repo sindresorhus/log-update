@@ -32,6 +32,8 @@ setInterval(() => {
 }, 80);
 ```
 
+You can use [yoctocolors](https://github.com/sindresorhus/yoctocolors) or [chalk](https://github.com/chalk/chalk) to colorize the output.
+
 ## API
 
 ### logUpdate(text…)
