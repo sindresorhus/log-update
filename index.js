@@ -5,25 +5,23 @@ import wrapAnsi from 'wrap-ansi';
 import sliceAnsi from 'slice-ansi';
 import stripAnsi from 'strip-ansi';
 
-const defaultTerminalHeight = 24;
+const getWidth = (stream, defaultWidth) => stream.columns ?? defaultWidth ?? 80;
 
-const getWidth = ({columns = 80}) => columns;
-
-const fitToTerminalHeight = (stream, text) => {
-	const terminalHeight = stream.rows ?? defaultTerminalHeight;
+const fitToTerminalHeight = (stream, text, defaultHeight) => {
+	const terminalHeight = stream.rows ?? defaultHeight ?? 24;
 	const lines = text.split('\n');
 	const toRemove = Math.max(0, lines.length - terminalHeight);
 	return toRemove ? sliceAnsi(text, stripAnsi(lines.slice(0, toRemove).join('\n')).length + 1) : text;
 };
 
-export function createLogUpdate(stream, {showCursor = false} = {}) {
+export function createLogUpdate(stream, {showCursor = false, defaultWidth, defaultHeight} = {}) {
 	let previousLineCount = 0;
-	let previousWidth = getWidth(stream);
+	let previousWidth = getWidth(stream, defaultWidth);
 	let previousOutput = '';
 
 	const reset = () => {
 		previousOutput = '';
-		previousWidth = getWidth(stream);
+		previousWidth = getWidth(stream, defaultWidth);
 		previousLineCount = 0;
 	};
 
@@ -32,8 +30,8 @@ export function createLogUpdate(stream, {showCursor = false} = {}) {
 			cliCursor.hide();
 		}
 
-		let output = fitToTerminalHeight(stream, arguments_.join(' ') + '\n');
-		const width = getWidth(stream);
+		let output = fitToTerminalHeight(stream, arguments_.join(' ') + '\n', defaultHeight);
+		const width = getWidth(stream, defaultWidth);
 
 		if (output === previousOutput && previousWidth === width) {
 			return;

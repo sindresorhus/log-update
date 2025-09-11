@@ -81,6 +81,42 @@ const log = createLogUpdate(process.stdout, {
 });
 ```
 
+##### defaultWidth
+
+Type: `number`\
+Default: `80`
+
+The width to use when the stream doesn't provide a `columns` property.
+
+This is useful when the output is piped, redirected, or in environments where the terminal size is not available.
+
+```js
+import {createLogUpdate} from 'log-update';
+
+// Use custom width when the stream doesn't provide columns
+const log = createLogUpdate(process.stdout, {
+	defaultWidth: 120
+});
+```
+
+##### defaultHeight
+
+Type: `number`\
+Default: `24`
+
+The height to use when the stream doesn't provide a `rows` property.
+
+This is useful when the output is piped, redirected, or in environments where the terminal size is not available.
+
+```js
+import {createLogUpdate} from 'log-update';
+
+// Use custom height when the stream doesn't provide rows
+const log = createLogUpdate(process.stdout, {
+	defaultHeight: 50
+});
+```
+
 ## Examples
 
 - [listr](https://github.com/SamVerschueren/listr) - Uses this module to render an interactive task list

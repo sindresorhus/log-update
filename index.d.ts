@@ -13,6 +13,44 @@ export type Options = {
 	```
 	*/
 	readonly showCursor?: boolean;
+
+	/**
+	The width to use when the stream doesn't provide a `columns` property. Defaults to `80`.
+
+	This is useful when the output is piped, redirected, or in environments where the terminal size is not available.
+
+	@default 80
+
+	@example
+	```
+	import {createLogUpdate} from 'log-update';
+
+	// Use custom width when the stream doesn't provide columns
+	const log = createLogUpdate(process.stdout, {
+		defaultWidth: 120
+	});
+	```
+	*/
+	readonly defaultWidth?: number;
+
+	/**
+	The height to use when the stream doesn't provide a `rows` property. Defaults to `24`.
+
+	This is useful when the output is piped, redirected, or in environments where the terminal size is not available.
+
+	@default 24
+
+	@example
+	```
+	import {createLogUpdate} from 'log-update';
+
+	// Use custom height when the stream doesn't provide rows
+	const log = createLogUpdate(process.stdout, {
+		defaultHeight: 50
+	});
+	```
+	*/
+	readonly defaultHeight?: number;
 };
 
 type LogUpdateMethods = {
