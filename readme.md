@@ -50,12 +50,33 @@ Persist the logged output.
 
 Useful if you want to start a new log session below the current one.
 
+### logUpdate.persist(text…)
+
+Write text to the terminal that persists, similar to `console.log()`.
+
+Unlike the main `logUpdate()` method which updates in place, `persist()` writes to the terminal in a way that preserves the output in the scrollback history.
+
+```js
+import logUpdate from 'log-update';
+
+// Update in place
+logUpdate('Processing...');
+logUpdate('Still processing...');
+
+// Write permanent output
+logUpdate.persist('✓ Task complete');
+
+// Continue updating
+logUpdate('Next task...');
+```
+
 ### logUpdateStderr(text…)
 
 Log to stderr.
 
 ### logUpdateStderr.clear()
 ### logUpdateStderr.done()
+### logUpdateStderr.persist(text…)
 
 ### createLogUpdate(stream, options?)
 

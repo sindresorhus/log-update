@@ -63,6 +63,31 @@ type LogUpdateMethods = {
 	Persist the logged output. Useful if you want to start a new log session below the current one.
 	*/
 	done(): void;
+
+	/**
+	Write text to the terminal that persists in the scrollback buffer.
+
+	Unlike the main log function which updates in place, this method writes output that remains in the terminal history, similar to `console.log()`. This is useful for displaying permanent results, status messages, or logs that users need to scroll back and review.
+
+	@param text - The text to persist to the terminal.
+
+	@example
+	```
+	import logUpdate from 'log-update';
+
+	// Update in place
+	logUpdate('Processing...');
+	logUpdate('Still processing...');
+
+	// Write permanent output
+	logUpdate.persist('✓ Task complete');
+	logUpdate.persist('✓ All tests passed');
+
+	// Continue with updates
+	logUpdate('Starting next task...');
+	```
+	*/
+	persist(...text: string[]): void;
 };
 
 /**

@@ -57,6 +57,23 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 		}
 	};
 
+	render.persist = (...arguments_) => {
+		// Clear any existing update first
+		if (previousLineCount > 0) {
+			stream.write(ansiEscapes.eraseLines(previousLineCount));
+			previousLineCount = 0;
+		}
+
+		// Write directly to stream without height fitting
+		const text = arguments_.join(' ') + '\n';
+		const width = getWidth(stream, defaultWidth);
+		const wrappedText = wrapAnsi(text, width, {trim: false, hard: true, wordWrap: false});
+		stream.write(wrappedText);
+
+		// Reset state since we're no longer tracking this output
+		reset();
+	};
+
 	return render;
 }
 

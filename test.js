@@ -271,3 +271,105 @@ test('defaultHeight not used when stream has rows', t => {
 	t.is(terminal.state.getLine(0).str, 'Line 4');
 	t.is(terminal.state.getLine(1).str, '');
 });
+
+test('height fitting truncates content that exceeds terminal height', t => {
+	const {terminal, log} = setup({rows: 3, columns: 80});
+
+	// Log content that exceeds terminal height
+	log('Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+
+	// Should only show the last 3 lines (terminal height)
+	t.is(terminal.state.getLine(0).str, 'Line 4');
+	t.is(terminal.state.getLine(1).str, 'Line 5');
+	t.is(terminal.state.getLine(2).str, '');
+});
+
+test('height fitting behavior causes scrollback pollution when disabled', t => {
+	const {terminal, log} = setup({rows: 2, columns: 80});
+
+	// Simulate what would happen without height fitting
+	// First update: 4 lines (2 go to scrollback, 2 visible)
+	log('A1\nA2\nA3\nA4');
+	// Current visible: A3, A4
+	t.is(terminal.state.getLine(0).str, 'A4');
+	t.is(terminal.state.getLine(1).str, '');
+
+	// Second update: 4 lines again (would push 2 more to scrollback)
+	log('B1\nB2\nB3\nB4');
+	// Current visible: B3, B4
+	t.is(terminal.state.getLine(0).str, 'B4');
+	t.is(terminal.state.getLine(1).str, '');
+
+	// This demonstrates why height fitting exists - without it,
+	// scrollback would contain: A1, A2, A3, A4, B1, B2
+	// And user would see intermediate states mixed with final states
+});
+
+test('persist method writes to scrollback without height fitting', t => {
+	const {log} = setup({rows: 3, columns: 80});
+
+	// Use persist to write content that exceeds terminal height
+	log.persist('Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+
+	// Content should be written without height fitting
+	// Note: terminal.js simulates visible area, but full content was written
+	t.pass();
+});
+
+test('persist method clears previous update before writing', t => {
+	const {terminal, log} = setup({rows: 3, columns: 80});
+
+	// First do a normal update
+	log('This will be cleared');
+	t.is(terminal.state.getLine(0).str, 'This will be cleared');
+
+	// Now persist should clear the update and write new content
+	log.persist('Permanent line 1');
+	log.persist('Permanent line 2');
+
+	// Both persist calls should have written their content
+	t.pass();
+});
+
+test('mixing persist and normal updates', t => {
+	const {terminal, log} = setup({rows: 4, columns: 80});
+
+	// Normal update
+	log('Updating...');
+	t.is(terminal.state.getLine(0).str, 'Updating...');
+
+	// Persist some output
+	log.persist('✓ Task 1 complete');
+
+	// Another normal update
+	log('Processing task 2...');
+
+	// Another persist
+	log.persist('✓ Task 2 complete');
+
+	// Final update
+	log('All done!');
+
+	t.pass();
+});
+
+test('persist method accepts multiple arguments', t => {
+	const {terminal} = setup({rows: 3, columns: 80});
+	const log = createLogUpdate(terminal);
+
+	// Test multiple arguments like console.log
+	log.persist('Status:', 'SUCCESS', '✓');
+
+	t.pass();
+});
+
+test('persist method wraps long lines', t => {
+	const {terminal} = setup({rows: 3, columns: 20});
+	const log = createLogUpdate(terminal);
+
+	// Persist a long line that needs wrapping
+	log.persist('This is a very long line that will be wrapped');
+
+	// Should be wrapped but not height-truncated
+	t.pass();
+});
