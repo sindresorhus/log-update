@@ -7,17 +7,143 @@ import stripAnsi from 'strip-ansi';
 
 const getWidth = (stream, defaultWidth) => stream.columns ?? defaultWidth ?? 80;
 
-const fitToTerminalHeight = (stream, text, defaultHeight) => {
+const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	const terminalHeight = stream.rows ?? defaultHeight ?? 24;
-	const lines = text.split('\n');
-	const toRemove = Math.max(0, lines.length - terminalHeight);
-	return toRemove ? sliceAnsi(text, stripAnsi(lines.slice(0, toRemove).join('\n')).length + 1) : text;
+	if (terminalHeight === undefined) {
+		return wrappedText;
+	}
+
+	// Zero height: intentionally produce no output
+	if (terminalHeight === 0) {
+		return '';
+	}
+
+	const unstyled = stripAnsi(wrappedText);
+	const newlineCount = [...unstyled].filter(character => character === '\n').length;
+	const linesCount = newlineCount + 1;
+	const toRemove = Math.max(0, linesCount - terminalHeight);
+	if (toRemove === 0) {
+		return wrappedText;
+	}
+
+	let seen = 0;
+	let cut = 0;
+	for (const [index, character] of [...unstyled].entries()) {
+		if (character === '\n') {
+			seen++;
+			if (seen === toRemove) {
+				cut = index + 1;
+				break;
+			}
+		}
+	}
+
+	return sliceAnsi(wrappedText, cut);
+};
+
+/**
+Find common prefix and suffix between frames.
+*/
+const diffFrames = (previousLines, nextLines) => {
+	let start = 0;
+	for (; start < previousLines.length && start < nextLines.length; start++) {
+		if (previousLines[start] !== nextLines[start]) {
+			break;
+		}
+	}
+
+	let endPrevious = previousLines.length - 1;
+	let endNext = nextLines.length - 1;
+	while (endPrevious >= start && endNext >= start && previousLines[endPrevious] === nextLines[endNext]) {
+		endPrevious--;
+		endNext--;
+	}
+
+	return {start, endPrevious, endNext};
+};
+
+/**
+Build a single escape sequence patch to transform previous -> next.
+*/
+const buildPatch = ({
+	prevCount,
+	start,
+	endPrevious,
+	endNext,
+	nextLines,
+	nextWrappedEndsWithNewline,
+}) => {
+	let sequence = '';
+
+	// Move cursor up to the first changed line, starting from the trailing blank line.
+	const upCount = Math.max(0, prevCount - 1 - start);
+	if (upCount > 0) {
+		sequence += ansiEscapes.cursorUp(upCount);
+	}
+
+	sequence += ansiEscapes.cursorLeft;
+
+	// Clear the changed block from the previous frame.
+	const linesToClear = Math.max(0, endPrevious - start + 1);
+	for (let index = 0; index < linesToClear; index++) {
+		sequence += ansiEscapes.eraseLine;
+
+		if (index < linesToClear - 1) {
+			sequence += ansiEscapes.cursorDown();
+		}
+	}
+
+	if (linesToClear > 1) {
+		sequence += ansiEscapes.cursorUp(linesToClear - 1);
+	}
+
+	sequence += ansiEscapes.cursorLeft;
+
+	// Write the new changed block.
+	const wroteSlice = nextLines.slice(start, endNext + 1);
+	if (wroteSlice.length > 0) {
+		let chunk = wroteSlice.join('\n');
+		if (nextWrappedEndsWithNewline && !chunk.endsWith('\n')) {
+			chunk += '\n';
+		}
+
+		sequence += chunk;
+
+		// Ensure we do not leave trailing characters on the last written line
+		sequence += ansiEscapes.eraseEndLine;
+	}
+
+	// Reposition cursor to the final trailing blank line for the next call
+	const currentLine = start + wroteSlice.length;
+	const finalLine = nextLines.length - 1;
+	const downCount = finalLine - currentLine;
+	if (downCount > 0) {
+		sequence += ansiEscapes.cursorDown(downCount);
+	}
+
+	return sequence;
 };
 
 export function createLogUpdate(stream, {showCursor = false, defaultWidth, defaultHeight} = {}) {
 	let previousLineCount = 0;
 	let previousWidth = getWidth(stream, defaultWidth);
 	let previousOutput = '';
+
+	/**
+	Normalize, wrap, and height-clip into a concrete frame.
+
+	Returns both the wrapped string and an array of lines, where an empty frame (for `rows === 0`) is represented by `lines.length === 0`.
+	*/
+	const computeFrame = (text, width) => {
+		// Normalize to a single trailing newline
+		const raw = `${String(text).replace(/\n+$/, '')}\n`;
+		let wrapped = wrapAnsi(raw, width, {trim: false, hard: true, wordWrap: false});
+		wrapped = fitToTerminalHeight(stream, wrapped, defaultHeight);
+
+		// Derive lines. Special-case empty string to represent 0 lines.
+		const lines = wrapped === '' ? [] : wrapped.split('\n');
+		return {wrapped, lines};
+	};
 
 	const reset = () => {
 		previousOutput = '';
@@ -30,19 +156,74 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 			cliCursor.hide();
 		}
 
-		let output = fitToTerminalHeight(stream, arguments_.join(' ') + '\n', defaultHeight);
 		const width = getWidth(stream, defaultWidth);
+		const {wrapped, lines} = computeFrame(arguments_.join(' '), width);
 
-		if (output === previousOutput && previousWidth === width) {
+		// If nothing would be written (rows === 0 after clipping), skip I/O but update state.
+		if (lines.length === 0) {
+			previousOutput = wrapped;
+			previousWidth = width;
+			previousLineCount = 0;
 			return;
 		}
 
-		previousOutput = output;
-		previousWidth = width;
-		output = wrapAnsi(output, width, {trim: false, hard: true, wordWrap: false});
+		// Fast no-op path
+		if (wrapped === previousOutput && previousWidth === width) {
+			return;
+		}
 
-		stream.write(ansiEscapes.eraseLines(previousLineCount) + output);
-		previousLineCount = output.split('\n').length;
+		// First frame: just write
+		if (previousLineCount === 0) {
+			stream.write(wrapped);
+
+			previousOutput = wrapped;
+			previousWidth = width;
+			previousLineCount = lines.length;
+			return;
+		}
+
+		// Width changed: full erase + write (diffing is invalid across wraps)
+		if (previousWidth !== width) {
+			stream.write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
+
+			previousOutput = wrapped;
+			previousWidth = width;
+			previousLineCount = lines.length;
+			return;
+		}
+
+		const previousLines = previousOutput === '' ? [] : previousOutput.split('\n');
+		const {start, endPrevious, endNext} = diffFrames(previousLines, lines);
+
+		// If nothing changed (including trailing blank logic), bail
+		if (start === lines.length && previousLineCount === lines.length) {
+			return;
+		}
+
+		// If common prefix length is zero, simpler and correct to full erase.
+		if (start === 0) {
+			stream.write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
+
+			previousOutput = wrapped;
+			previousWidth = width;
+			previousLineCount = lines.length;
+			return;
+		}
+
+		const patch = buildPatch({
+			prevCount: previousLineCount,
+			start,
+			endPrevious,
+			endNext,
+			nextLines: lines,
+			nextWrappedEndsWithNewline: wrapped.endsWith('\n'),
+		});
+
+		stream.write(patch);
+
+		previousOutput = wrapped;
+		previousWidth = width;
+		previousLineCount = lines.length;
 	};
 
 	render.clear = () => {
@@ -58,19 +239,16 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 	};
 
 	render.persist = (...arguments_) => {
-		// Clear any existing update first
 		if (previousLineCount > 0) {
 			stream.write(ansiEscapes.eraseLines(previousLineCount));
 			previousLineCount = 0;
 		}
 
-		// Write directly to stream without height fitting
-		const text = arguments_.join(' ') + '\n';
+		const text = `${arguments_.join(' ')}`;
 		const width = getWidth(stream, defaultWidth);
-		const wrappedText = wrapAnsi(text, width, {trim: false, hard: true, wordWrap: false});
+		const {wrapped: wrappedText} = computeFrame(text, width);
 		stream.write(wrappedText);
 
-		// Reset state since we're no longer tracking this output
 		reset();
 	};
 
@@ -78,6 +256,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 }
 
 const logUpdate = createLogUpdate(process.stdout);
+
 export default logUpdate;
 
 export const logUpdateStderr = createLogUpdate(process.stderr);

@@ -17,10 +17,10 @@
 	},
 	"sideEffects": false,
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
 	"scripts": {
-		"test": "xo && ava && tsd"
+		"test": "xo && node --test && tsd"
 	},
 	"files": [
 		"index.js",
@@ -45,23 +45,25 @@
 		"animation"
 	],
 	"dependencies": {
-		"ansi-escapes": "^7.0.0",
+		"ansi-escapes": "^7.1.0",
 		"cli-cursor": "^5.0.0",
-		"slice-ansi": "^7.1.0",
-		"strip-ansi": "^7.1.0",
-		"wrap-ansi": "^9.0.0"
+		"slice-ansi": "^7.1.2",
+		"strip-ansi": "^7.1.2",
+		"wrap-ansi": "^9.0.2"
 	},
 	"devDependencies": {
-		"@types/node": "^20.14.12",
-		"ava": "^6.1.3",
+		"@types/node": "^24.4.0",
+		"string-width": "^8.1.0",
 		"terminal.js": "^1.0.11",
-		"tsd": "^0.31.1",
+		"tsd": "^0.33.0",
 		"wcwidth": "^1.0.1",
-		"xo": "^0.59.2"
+		"xo": "^1.2.2"
 	},
 	"xo": {
 		"rules": {
-			"@typescript-eslint/no-unsafe-argument": "off"
+			"@typescript-eslint/no-unsafe-argument": "off",
+			"import-x/no-extraneous-dependencies": "off",
+			"n/no-extraneous-import": "off"
 		}
 	}
 }

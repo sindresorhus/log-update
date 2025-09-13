@@ -22,7 +22,7 @@ setInterval(() => {
 }, 80);
 
 // Run it with:
-// $ node no-scroll.js
+// $ node example-no-scroll.js
 //
 // Run this in a terminal with fewer than 50 lines and after terminating with ctrl-c, note that
 // the scrollback buffer is not polluted with long lists of numbers that had scrolled off the

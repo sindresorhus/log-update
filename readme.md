@@ -5,6 +5,8 @@
 
 ![](screenshot.gif)
 
+It performs partial redraws when possible to reduce flicker.
+
 ## Install
 
 ```sh

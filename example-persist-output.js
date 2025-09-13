@@ -9,7 +9,6 @@ const rainbowColors = ['red', 'yellow', 'green', 'cyan', 'blue', 'magenta'];
 const sparkles = ['✨', '💫', '⭐', '🌟', '✨', '💖'];
 const unicorns = ['🦄', '🦄', '🦄'];
 
-// Phase 1: Rainbow spinner
 console.log(chalk.cyan('🌈 Phase 1: Rainbow spinner that updates in place!\n'));
 
 let frame = 0;
@@ -17,21 +16,18 @@ for (const step of Array.from({length: 20}).keys()) {
 	const color = rainbowColors[frame % rainbowColors.length];
 	const sparkle = sparkles[frame % sparkles.length];
 
-	logUpdate(
-		chalk[color](`  ${sparkle} Making rainbow magic ${'.'.repeat((frame % 3) + 1)}\n`)
+	logUpdate(chalk[color](`  ${sparkle} Making rainbow magic ${'.'.repeat((frame % 3) + 1)}\n`)
 		+ chalk.gray(`     ${'█'.repeat(step + 1)}${'░'.repeat(20 - step)}\n`)
-		+ chalk.yellow(`     ${unicorns[frame % 3]} Unicorn power: ${((step + 1) * 5)}%`),
-	);
+		+ chalk.yellow(`     ${unicorns[frame % 3]} Unicorn power: ${((step + 1) * 5)}%`));
 
 	frame++;
+
 	// eslint-disable-next-line no-await-in-loop
 	await delay(150);
 }
 
-// Persist a celebration
 logUpdate.persist(chalk.green('\n  🎉 Rainbow magic complete!\n'));
 
-// Phase 2: Mixing updates with persisted unicorn messages
 console.log(chalk.cyan('🦄 Phase 2: Collecting unicorns!\n'));
 
 const unicornNames = ['Sparkle', 'Rainbow', 'Stardust', 'Moonbeam', 'Glitter'];
@@ -41,26 +37,20 @@ for (const [index, name] of unicornNames.entries()) {
 	for (const animationFrame of Array.from({length: 8}).keys()) {
 		const dots = '.'.repeat((animationFrame % 4));
 		const spaces = ' '.repeat(3 - (animationFrame % 4));
-		logUpdate(
-			chalk.magenta(`  🔮 Searching for ${name}${dots}${spaces}`),
-		);
+		logUpdate(chalk.magenta(`  🔮 Searching for ${name}${dots}${spaces}`));
 		// eslint-disable-next-line no-await-in-loop
 		await delay(100);
 	}
 
-	// Persist the found unicorn!
 	const color = rainbowColors[index % rainbowColors.length];
-	logUpdate.persist(
-		chalk[color](`  🦄 Found ${name}!`)
+	logUpdate.persist(chalk[color](`  🦄 Found ${name}!`)
 		+ ' '
-		+ chalk.dim('✨'.repeat(3)),
-	);
+		+ chalk.dim('✨'.repeat(3)));
 
 	// eslint-disable-next-line no-await-in-loop
 	await delay(200);
 }
 
-// Final celebration
 logUpdate.clear();
 
 const finalMessage = `
