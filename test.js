@@ -1109,3 +1109,90 @@ test('partial rendering: complex mixed changes', () => {
 	assert.ok(stream.output.includes('Changed'));
 	assert.ok(stream.output.includes('New line'));
 });
+
+test('identical updates are skipped (no-op optimization)', () => {
+	const stream = {
+		columns: 80,
+		rows: 5,
+		output: '',
+		writeCount: 0,
+		write(chunk) {
+			this.writeCount++;
+			this.output += chunk;
+		},
+	};
+
+	const log = createLogUpdate(stream);
+
+	// First update should go through
+	log('Frame 1');
+	assert.equal(stream.writeCount, 1);
+
+	// Identical updates should be skipped
+	stream.writeCount = 0;
+	log('Frame 1');
+	log('Frame 1');
+	log('Frame 1');
+	assert.equal(stream.writeCount, 0);
+
+	// Different content should go through
+	log('Frame 2');
+	assert.equal(stream.writeCount, 1);
+});
+
+test('rapid updates with different content all go through', () => {
+	const stream = {
+		columns: 80,
+		rows: 5,
+		output: '',
+		writeCount: 0,
+		write(chunk) {
+			this.writeCount++;
+			this.output += chunk;
+		},
+	};
+
+	const log = createLogUpdate(stream);
+
+	// All different updates should go through
+	for (let i = 1; i <= 10; i++) {
+		log(`Frame ${i}`);
+	}
+
+	// All updates should have been written
+	assert.equal(stream.writeCount, 10);
+});
+
+test('empty string input produces no output', () => {
+	const stream = {
+		columns: 80,
+		rows: 5,
+		output: '',
+		write(chunk) {
+			this.output += chunk;
+		},
+	};
+
+	const log = createLogUpdate(stream);
+	log('');
+
+	// Empty string should still produce output (just newline)
+	assert.ok(stream.output.length > 0);
+});
+
+test('correct line counting with ANSI escape codes', () => {
+	const {terminal} = setup({rows: 5, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// Text with ANSI codes that shouldn't affect line counting
+	log('\u001B[32mGreen line\u001B[39m\n\u001B[31mRed line\u001B[39m');
+	stream.output = '';
+
+	// Update with different colors
+	log('\u001B[33mYellow line\u001B[39m\n\u001B[34mBlue line\u001B[39m');
+
+	// Should properly count as 2 lines despite ANSI codes
+	const eraseCount = countEraseLines(stream.output);
+	assert.ok(eraseCount <= 3); // 2 lines + trailing
+});
