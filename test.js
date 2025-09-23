@@ -943,17 +943,70 @@ test('rows=0 skips writing, then resumes cleanly when rows>0', () => {
 	assert.equal(eraseCount, 0);
 });
 
-test('trailing newline normalization avoids spurious writes', () => {
-	const {terminal} = setup({rows: 5, columns: 40});
-	const stream = makeCapturingStream(terminal);
-	const log = createLogUpdate(stream);
+test('preserves multiple trailing blank lines', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
 
-	log('Hello');
-	stream.output = '';
+	// Test with two trailing newlines
 	log('Hello\n\n');
+	assert.equal(terminal.state.getLine(0).str, 'Hello');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, '');
 
-	// Normalized to a single trailing newline => no diff, no output
-	assert.equal(stream.output, '');
+	// Test with three trailing newlines
+	log('World\n\n\n');
+	assert.equal(terminal.state.getLine(0).str, 'World');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, '');
+	assert.equal(terminal.state.getLine(3).str, '');
+});
+
+test('preserves user trailing newlines and ensures at least one', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	// Test without trailing newline - should add one for rendering
+	log('Hello');
+	assert.equal(terminal.state.getLine(0).str, 'Hello');
+	assert.equal(terminal.state.getLine(1).str, '');
+
+	// Test with one trailing newline - should preserve it
+	log('World\n');
+	assert.equal(terminal.state.getLine(0).str, 'World');
+	assert.equal(terminal.state.getLine(1).str, '');
+
+	// Test with two trailing newlines - should preserve both
+	log('Multiple\n\n');
+	assert.equal(terminal.state.getLine(0).str, 'Multiple');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, '');
+});
+
+test('preserves blank lines in the middle of text', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('First line\n\nThird line');
+	assert.equal(terminal.state.getLine(0).str, 'First line');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, 'Third line');
+});
+
+test('issue #62: multiple blank lines at the end', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	// This is the exact scenario from the issue
+	log('# Hello world\n\n');
+	assert.equal(terminal.state.getLine(0).str, '# Hello world');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, '');
+
+	log('# Hello world\n\nIt\'s');
+	assert.equal(terminal.state.getLine(0).str, '# Hello world');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, 'It\'s');
+
+	log('# Hello world\n\nIt\'s a beautiful day');
+	assert.equal(terminal.state.getLine(0).str, '# Hello world');
+	assert.equal(terminal.state.getLine(1).str, '');
+	assert.equal(terminal.state.getLine(2).str, 'It\'s a beautiful day');
 });
 
 test('huge frames are batched into a single write', () => {

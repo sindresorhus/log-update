@@ -10,12 +10,12 @@ const getWidth = (stream, defaultWidth) => stream.columns ?? defaultWidth ?? 80;
 const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	const terminalHeight = stream.rows ?? defaultHeight ?? 24;
 	if (terminalHeight === undefined) {
-		return wrappedText;
+		return {text: wrappedText, wasClipped: false};
 	}
 
 	// Zero height: intentionally produce no output
 	if (terminalHeight === 0) {
-		return '';
+		return {text: '', wasClipped: wrappedText !== ''};
 	}
 
 	const unstyled = stripAnsi(wrappedText);
@@ -23,7 +23,7 @@ const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	const linesCount = newlineCount + 1;
 	const toRemove = Math.max(0, linesCount - terminalHeight);
 	if (toRemove === 0) {
-		return wrappedText;
+		return {text: wrappedText, wasClipped: false};
 	}
 
 	let seen = 0;
@@ -38,7 +38,7 @@ const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 		}
 	}
 
-	return sliceAnsi(wrappedText, cut);
+	return {text: sliceAnsi(wrappedText, cut), wasClipped: true};
 };
 
 /**
@@ -135,14 +135,15 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 	Returns both the wrapped string and an array of lines, where an empty frame (for `rows === 0`) is represented by `lines.length === 0`.
 	*/
 	const computeFrame = (text, width) => {
-		// Normalize to a single trailing newline
-		const raw = `${String(text).replace(/\n+$/, '')}\n`;
-		let wrapped = wrapAnsi(raw, width, {trim: false, hard: true, wordWrap: false});
-		wrapped = fitToTerminalHeight(stream, wrapped, defaultHeight);
+		// Preserve user's trailing newlines, ensure at least one
+		const textString = String(text);
+		const raw = textString.endsWith('\n') ? textString : `${textString}\n`;
+		const wrapped = wrapAnsi(raw, width, {trim: false, hard: true, wordWrap: false});
+		const {text: clippedText, wasClipped} = fitToTerminalHeight(stream, wrapped, defaultHeight);
 
 		// Derive lines. Special-case empty string to represent 0 lines.
-		const lines = wrapped === '' ? [] : wrapped.split('\n');
-		return {wrapped, lines};
+		const lines = clippedText === '' ? [] : clippedText.split('\n');
+		return {wrapped: clippedText, lines, wasClipped};
 	};
 
 	const reset = () => {
@@ -157,7 +158,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 		}
 
 		const width = getWidth(stream, defaultWidth);
-		const {wrapped, lines} = computeFrame(arguments_.join(' '), width);
+		const {wrapped, lines, wasClipped} = computeFrame(arguments_.join(' '), width);
 
 		// If nothing would be written (rows === 0 after clipping), skip I/O but update state.
 		if (lines.length === 0) {
@@ -182,8 +183,8 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 			return;
 		}
 
-		// Width changed: full erase + write (diffing is invalid across wraps)
-		if (previousWidth !== width) {
+		// Width changed or content clipped: full erase + write (diffing is invalid across wraps/clips)
+		if (previousWidth !== width || wasClipped) {
 			stream.write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
 
 			previousOutput = wrapped;
