@@ -102,15 +102,15 @@ const buildPatch = ({
 	// Write the new changed block.
 	const wroteSlice = nextLines.slice(start, endNext + 1);
 	if (wroteSlice.length > 0) {
-		let chunk = wroteSlice.join('\n');
-		if (nextWrappedEndsWithNewline && !chunk.endsWith('\n')) {
-			chunk += '\n';
-		}
-
+		const chunk = wroteSlice.join('\n');
 		sequence += chunk;
 
 		// Ensure we do not leave trailing characters on the last written line
 		sequence += ansiEscapes.eraseEndLine;
+
+		if (nextWrappedEndsWithNewline && !chunk.endsWith('\n')) {
+			sequence += '\n';
+		}
 	}
 
 	// Reposition cursor to the final trailing blank line for the next call

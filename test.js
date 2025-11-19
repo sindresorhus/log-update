@@ -1009,6 +1009,28 @@ test('issue #62: multiple blank lines at the end', () => {
 	assert.equal(terminal.state.getLine(2).str, 'It\'s a beautiful day');
 });
 
+test('issue #64: animated updates preserve trailing lines', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	const frames = ['-', '\\', '|', '/'];
+
+	// Simulate animation updates like the reported issue
+	for (const frame of frames) {
+		log(`
+        ♥♥
+   ${frame} unicorns ${frame}
+        ♥♥
+`);
+
+		// All lines including leading/trailing blank lines must be preserved
+		assert.equal(terminal.state.getLine(0).str, '');
+		assert.equal(terminal.state.getLine(1).str, '        ♥♥');
+		assert.equal(terminal.state.getLine(2).str, `   ${frame} unicorns ${frame}`);
+		assert.equal(terminal.state.getLine(3).str, '        ♥♥');
+		assert.equal(terminal.state.getLine(4).str, '');
+	}
+});
+
 test('huge frames are batched into a single write', () => {
 	class CountingStream {
 		constructor() {
