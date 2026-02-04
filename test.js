@@ -25,12 +25,18 @@ const makeCapturingStream = terminal => ({
 // Shared test utilities for partial rendering analysis
 const ESC = '\u001B[';
 const ERASE_LINE = `${ESC}2K`;
+const SYNCHRONIZED_OUTPUT_ENABLE = '\u001B[?2026h';
+const SYNCHRONIZED_OUTPUT_DISABLE = '\u001B[?2026l';
 
 const countEraseLines = output => output.split(ERASE_LINE).length - 1;
 
-const setupPartialTest = (options = {}) => {
-	const {terminal} = setup({rows: 20, columns: 40, ...options});
+const setupPartialTest = ({rows = 20, columns = 40, isTTY} = {}) => {
+	const {terminal} = setup({rows, columns});
 	const stream = makeCapturingStream(terminal);
+	if (isTTY !== undefined) {
+		stream.isTTY = isTTY;
+	}
+
 	const log = createLogUpdate(stream);
 	return {terminal, stream, log};
 };
@@ -40,6 +46,69 @@ test('output a single line', () => {
 
 	log('goodbye, world');
 	assert.equal(terminal.state.getLine(0).str, 'goodbye, world');
+});
+
+test('uses synchronized output sequences', () => {
+	const {terminal, stream, log} = setupPartialTest({isTTY: true});
+
+	log('hello world');
+
+	assert.ok(stream.output.includes(SYNCHRONIZED_OUTPUT_ENABLE));
+	assert.ok(stream.output.includes(SYNCHRONIZED_OUTPUT_DISABLE));
+	assert.ok(stream.output.indexOf(SYNCHRONIZED_OUTPUT_ENABLE) < stream.output.indexOf(SYNCHRONIZED_OUTPUT_DISABLE));
+	assert.ok(stream.output.startsWith(SYNCHRONIZED_OUTPUT_ENABLE));
+	assert.ok(stream.output.endsWith(SYNCHRONIZED_OUTPUT_DISABLE));
+	assert.equal(stream.output.split(SYNCHRONIZED_OUTPUT_ENABLE).length - 1, 1);
+	assert.equal(stream.output.split(SYNCHRONIZED_OUTPUT_DISABLE).length - 1, 1);
+	assert.equal(terminal.state.getLine(0).str, 'hello world');
+});
+
+test('synchronized output wraps every update', () => {
+	const terminal = new Terminal({rows: 10, columns: 40});
+	terminal.rows = 10;
+	terminal.columns = 40;
+	terminal.state.setMode('crlf', true);
+
+	const writes = [];
+	const stream = {
+		rows: terminal.rows,
+		columns: terminal.columns,
+		isTTY: true,
+		write(chunk) {
+			writes.push(chunk);
+			terminal.write(chunk);
+		},
+	};
+
+	const log = createLogUpdate(stream);
+
+	log('One');
+	log('Two');
+	log.clear();
+	log('Three');
+	log.persist('Persisted');
+
+	for (const chunk of writes) {
+		assert.ok(chunk.startsWith(SYNCHRONIZED_OUTPUT_ENABLE));
+		assert.ok(chunk.endsWith(SYNCHRONIZED_OUTPUT_DISABLE));
+		assert.equal(chunk.split(SYNCHRONIZED_OUTPUT_ENABLE).length - 1, 1);
+		assert.equal(chunk.split(SYNCHRONIZED_OUTPUT_DISABLE).length - 1, 1);
+	}
+});
+
+test('does not use synchronized output on non-tty streams', () => {
+	const {stream, log} = setupPartialTest();
+
+	log('hello world');
+
+	assert.ok(!stream.output.includes(SYNCHRONIZED_OUTPUT_ENABLE));
+	assert.ok(!stream.output.includes(SYNCHRONIZED_OUTPUT_DISABLE));
+
+	const {stream: falseStream, log: falseLog} = setupPartialTest({isTTY: false});
+	falseLog('hello again');
+
+	assert.ok(!falseStream.output.includes(SYNCHRONIZED_OUTPUT_ENABLE));
+	assert.ok(!falseStream.output.includes(SYNCHRONIZED_OUTPUT_DISABLE));
 });
 
 test('update a single line', () => {

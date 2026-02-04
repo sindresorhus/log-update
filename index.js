@@ -6,6 +6,8 @@ import sliceAnsi from 'slice-ansi';
 import stripAnsi from 'strip-ansi';
 
 const getWidth = (stream, defaultWidth) => stream.columns ?? defaultWidth ?? 80;
+const SYNCHRONIZED_OUTPUT_ENABLE = '\u001B[?2026h';
+const SYNCHRONIZED_OUTPUT_DISABLE = '\u001B[?2026l';
 
 const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	const terminalHeight = stream.rows ?? defaultHeight ?? 24;
@@ -128,6 +130,20 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 	let previousLineCount = 0;
 	let previousWidth = getWidth(stream, defaultWidth);
 	let previousOutput = '';
+	const useSynchronizedOutput = stream.isTTY === true;
+
+	const write = output => {
+		if (output === '') {
+			return;
+		}
+
+		if (useSynchronizedOutput) {
+			stream.write(SYNCHRONIZED_OUTPUT_ENABLE + output + SYNCHRONIZED_OUTPUT_DISABLE);
+			return;
+		}
+
+		stream.write(output);
+	};
 
 	/**
 	Normalize, wrap, and height-clip into a concrete frame.
@@ -175,7 +191,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 
 		// First frame: just write
 		if (previousLineCount === 0) {
-			stream.write(wrapped);
+			write(wrapped);
 
 			previousOutput = wrapped;
 			previousWidth = width;
@@ -185,7 +201,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 
 		// Width changed or content clipped: full erase + write (diffing is invalid across wraps/clips)
 		if (previousWidth !== width || wasClipped) {
-			stream.write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
+			write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
 
 			previousOutput = wrapped;
 			previousWidth = width;
@@ -203,7 +219,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 
 		// If common prefix length is zero, simpler and correct to full erase.
 		if (start === 0) {
-			stream.write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
+			write(ansiEscapes.eraseLines(previousLineCount) + wrapped);
 
 			previousOutput = wrapped;
 			previousWidth = width;
@@ -220,7 +236,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 			nextWrappedEndsWithNewline: wrapped.endsWith('\n'),
 		});
 
-		stream.write(patch);
+		write(patch);
 
 		previousOutput = wrapped;
 		previousWidth = width;
@@ -228,7 +244,7 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 	};
 
 	render.clear = () => {
-		stream.write(ansiEscapes.eraseLines(previousLineCount));
+		write(ansiEscapes.eraseLines(previousLineCount));
 		reset();
 	};
 
@@ -240,15 +256,15 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 	};
 
 	render.persist = (...arguments_) => {
+		const erasePrevious = previousLineCount > 0 ? ansiEscapes.eraseLines(previousLineCount) : '';
 		if (previousLineCount > 0) {
-			stream.write(ansiEscapes.eraseLines(previousLineCount));
 			previousLineCount = 0;
 		}
 
 		const text = `${arguments_.join(' ')}`;
 		const width = getWidth(stream, defaultWidth);
 		const {wrapped: wrappedText} = computeFrame(text, width);
-		stream.write(wrappedText);
+		write(erasePrevious + wrappedText);
 
 		reset();
 	};
