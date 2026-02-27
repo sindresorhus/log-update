@@ -45,19 +45,19 @@
 		"animation"
 	],
 	"dependencies": {
-		"ansi-escapes": "^7.1.0",
+		"ansi-escapes": "^7.3.0",
 		"cli-cursor": "^5.0.0",
-		"slice-ansi": "^7.1.2",
-		"strip-ansi": "^7.1.2",
-		"wrap-ansi": "^9.0.2"
+		"slice-ansi": "^8.0.0",
+		"strip-ansi": "^7.2.0",
+		"wrap-ansi": "^10.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^24.4.0",
-		"string-width": "^8.1.0",
+		"@types/node": "^25.3.2",
+		"string-width": "^8.2.0",
 		"terminal.js": "^1.0.11",
 		"tsd": "^0.33.0",
 		"wcwidth": "^1.0.1",
-		"xo": "^1.2.2"
+		"xo": "^1.2.3"
 	},
 	"xo": {
 		"rules": {
