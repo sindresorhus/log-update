@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import Terminal from 'terminal.js';
@@ -29,6 +30,12 @@ const SYNCHRONIZED_OUTPUT_ENABLE = '\u001B[?2026h';
 const SYNCHRONIZED_OUTPUT_DISABLE = '\u001B[?2026l';
 
 const countEraseLines = output => output.split(ERASE_LINE).length - 1;
+
+const assertTerminalLines = (terminal, expectedLines) => {
+	for (const [index, expectedLine] of expectedLines.entries()) {
+		assert.equal(terminal.state.getLine(index).str, expectedLine);
+	}
+};
 
 const setupPartialTest = ({rows = 20, columns = 40, isTTY} = {}) => {
 	const {terminal} = setup({rows, columns});
@@ -153,6 +160,232 @@ test('output beyond terminal height with multi-line color', () => {
 	assert.equal(terminal.state.getLine(0).str, 'line 2');
 	assert.equal(terminal.state.getLine(1).str, 'line 3');
 	assert.equal(terminal.state.getLine(2).str, '');
+});
+
+const zeroWidthPrefixCases = [
+	['zero-width space', '\u200Bword'],
+	['leading zero-width joiner', '\u200Dword'],
+	['standalone combining mark', '\u0301word'],
+];
+
+test('height clipping with zero-width prefixes does not over-erase on the next update', () => {
+	for (const [name, text] of zeroWidthPrefixCases) {
+		const {terminal, stream, log} = setupPartialTest({rows: 3, columns: 20});
+
+		log(`A\n${text}\nB\nC`);
+		assertTerminalLines(terminal, ['B', 'C', '']);
+
+		stream.output = '';
+		log('D');
+
+		assert.equal(countEraseLines(stream.output), 3, name);
+	}
+});
+
+const zeroWidthFollowUpCases = [
+	{
+		name: 'leading blank line',
+		text: '\u200Bword',
+		assertion({stream, message}) {
+			assert.equal(stream.output, 'B\nC\n', message);
+		},
+	},
+	{
+		name: 'clear',
+		text: '\u200Dword',
+		assertion({terminal, stream, log, message}) {
+			stream.output = '';
+			log.clear();
+			assert.equal(countEraseLines(stream.output), 3, message);
+			assertTerminalLines(terminal, ['', '', '']);
+		},
+	},
+	{
+		name: 'persist',
+		text: '\u0301word',
+		assertion({terminal, stream, log, message}) {
+			stream.output = '';
+			log.persist('Persisted');
+			assert.equal(countEraseLines(stream.output), 3, message);
+			assert.ok(stream.output.endsWith('Persisted\n'), message);
+			assertTerminalLines(terminal, ['Persisted', '', '']);
+		},
+	},
+];
+
+test('zero-width prefix clipping follow-up operations stay aligned', () => {
+	for (const {name, text, assertion} of zeroWidthFollowUpCases) {
+		const {terminal, stream, log} = setupPartialTest({rows: 3, columns: 20});
+		log(`A\n${text}\nB\nC`);
+		assertion({
+			terminal,
+			stream,
+			log,
+			message: name,
+		});
+	}
+});
+
+const blankRewriteCases = [
+	{
+		name: 'rewriting a blank content line keeps the cursor aligned for the next update',
+		updates: ['A\nB', 'A\n\n', 'A\nX'],
+		expectedLines: ['A', 'X', ''],
+	},
+	{
+		name: 'rewriting a blank middle line preserves the suffix on later updates',
+		updates: ['A\nB\nC', 'A\n\nC', 'A\nX\nC'],
+		expectedLines: ['A', 'X', 'C', ''],
+	},
+	{
+		name: 'rewriting a blank last content line keeps the cursor aligned for later updates',
+		updates: ['A\nB\nC', 'A\nB\n', 'A\nB\nX'],
+		expectedLines: ['A', 'B', 'X', ''],
+	},
+	{
+		name: 'adding only trailing blank lines keeps the cursor aligned for later updates',
+		updates: ['A', 'A\n\n', 'A\nB'],
+		expectedLines: ['A', 'B', ''],
+	},
+];
+
+for (const {name, updates, expectedLines} of blankRewriteCases) {
+	test(name, () => {
+		const {terminal, log} = setupPartialTest({rows: 5, columns: 20});
+
+		for (const update of updates) {
+			log(update);
+		}
+
+		assertTerminalLines(terminal, expectedLines);
+	});
+}
+
+const setupHalfwidthKanaFrame = () => {
+	const context = setupPartialTest({rows: 3, columns: 20});
+	context.log('ｶﾞ\nB\nC');
+	return context;
+};
+
+test('height clipping does not over-remove halfwidth kana graphemes', () => {
+	const {terminal, stream} = setupHalfwidthKanaFrame();
+
+	assert.equal(stream.output, 'B\nC\n');
+	assertTerminalLines(terminal, ['B', 'C', '']);
+});
+
+const halfwidthKanaFollowUpCases = [
+	{
+		name: 'height clipping with halfwidth kana keeps erase count aligned on the next update',
+		assertion({terminal, stream, log}) {
+			stream.output = '';
+			log('Done');
+			assert.equal(countEraseLines(stream.output), 3);
+			assertTerminalLines(terminal, ['Done', '', '']);
+		},
+	},
+	{
+		name: 'height clipping with halfwidth kana keeps clear aligned',
+		assertion({terminal, stream, log}) {
+			stream.output = '';
+			log.clear();
+			assert.equal(countEraseLines(stream.output), 3);
+			assertTerminalLines(terminal, ['', '', '']);
+		},
+	},
+	{
+		name: 'height clipping with halfwidth kana keeps persist aligned',
+		assertion({terminal, stream, log}) {
+			stream.output = '';
+			log.persist('Persisted');
+			assert.equal(countEraseLines(stream.output), 3);
+			assert.ok(stream.output.endsWith('Persisted\n'));
+			assertTerminalLines(terminal, ['Persisted', '', '']);
+		},
+	},
+];
+
+for (const {name, assertion} of halfwidthKanaFollowUpCases) {
+	test(name, () => {
+		const context = setupHalfwidthKanaFrame();
+		assertion(context);
+	});
+}
+
+test('all-blank clipped frame does not set previousLineCount above terminalHeight', () => {
+	const {terminal, stream, log} = setupPartialTest({rows: 3, columns: 20});
+
+	// '\n\n\n\n' produces 5 split segments, clipped to 3 rows.
+	// The clipped text is all-blank; getFrameHeight must count it consistently
+	// with split('\n').length so previousLineCount does not exceed terminalHeight.
+	log('\n\n\n\n');
+	stream.output = '';
+	log('X');
+
+	// If previousLineCount were wrong (4 instead of 3), eraseLines would over-erase
+	// into scrollback. Exactly 3 erase-line sequences are expected.
+	assert.equal(countEraseLines(stream.output), 3);
+	assertTerminalLines(terminal, ['X', '', '']);
+});
+
+test('shrinking a clipped blank frame does not leave the next render one row too low', () => {
+	const {terminal, log} = setupPartialTest({rows: 4, columns: 20});
+
+	log('😀\n\n\n\n');
+	log('');
+	log('é');
+
+	assertTerminalLines(terminal, ['é', '', '', '']);
+});
+
+test('height clipping to one row erases previous output and recovers on resize', () => {
+	const {terminal, stream, log} = setupPartialTest({rows: 2, columns: 20});
+
+	log('A');
+	terminal.rows = 1;
+	stream.rows = 1;
+	stream.output = '';
+	log('你');
+
+	// On a 1-row terminal, every frame needs at least 2 rows (content + trailing newline),
+	// so the frame clips to empty and the previous output is erased.
+
+	terminal.rows = 2;
+	stream.rows = 2;
+	log('é');
+	assertTerminalLines(terminal, ['é', '']);
+});
+
+test('adding only trailing blank lines keeps clear aligned', () => {
+	const {terminal, log} = setupPartialTest({rows: 3, columns: 20});
+
+	log('A');
+	log('A\n\n');
+	log.clear();
+	log('Fresh');
+
+	assertTerminalLines(terminal, ['Fresh', '', '']);
+});
+
+test('adding only trailing blank lines keeps persist aligned', () => {
+	const {terminal, log} = setupPartialTest({rows: 3, columns: 20});
+
+	log('A');
+	log('A\n\n');
+	log.persist('Persisted');
+	log('Fresh');
+
+	assertTerminalLines(terminal, ['Persisted', 'Fresh', '']);
+});
+
+test('appending after a preserved blank line renders below it', () => {
+	const {terminal, stream, log} = setupPartialTest({rows: 6, columns: 20});
+
+	log('A');
+	stream.output = '';
+	log('A\n\nX');
+
+	assertTerminalLines(terminal, ['A', '', 'X', '']);
 });
 
 test('growing output', () => {
@@ -497,12 +730,11 @@ test('partial updates: append-only update causes no erase', () => {
 
 	const ESC = '\u001B[';
 	const ERASE_LINE = `${ESC}2K`;
-	const cursorUpCount = stream.output.split(`${ESC}1A`).length - 1;
 	const eraseCount = stream.output.split(ERASE_LINE).length - 1;
 
-	// Appending should not erase existing lines
-	assert.equal(eraseCount, 0);
-	assert.equal(cursorUpCount, 0);
+	// Appending rewrites the trailing blank to reposition it correctly
+	assert.equal(eraseCount, 1);
+	assert.ok(stream.output.includes('C'));
 });
 
 test('width change falls back to full erase', () => {
@@ -778,7 +1010,7 @@ test('change only second line clears exactly one line', () => {
 	assert.equal(eraseCount, 1);
 });
 
-test('remove middle line clears exactly one line', () => {
+test('remove middle line rewrites suffix at new position', () => {
 	const terminal = new Terminal({rows: 5, columns: 20});
 	terminal.rows = 5;
 	terminal.columns = 20;
@@ -810,11 +1042,11 @@ test('remove middle line clears exactly one line', () => {
 	const ERASE_LINE = `${ESC}2K`;
 	const eraseCount = stream.output.split(ERASE_LINE).length - 1;
 
-	// Only one line (middle) was cleared
-	assert.equal(eraseCount, 1);
+	// Suffix is rewritten at its new position when lines are removed
+	assert.equal(eraseCount, 3);
 });
 
-test('insert middle line does not erase (just writes the new line)', () => {
+test('insert middle line rewrites suffix at new position', () => {
 	const terminal = new Terminal({rows: 5, columns: 20});
 	terminal.rows = 5;
 	terminal.columns = 20;
@@ -846,8 +1078,8 @@ test('insert middle line does not erase (just writes the new line)', () => {
 	const ERASE_LINE = `${ESC}2K`;
 	const eraseCount = stream.output.split(ERASE_LINE).length - 1;
 
-	// No erases; we only append the inserted block
-	assert.equal(eraseCount, 0);
+	// Suffix is rewritten at its new position when lines are inserted
+	assert.equal(eraseCount, 2);
 });
 
 test('emoji wide chars: change second line clears exactly one line', () => {
@@ -1186,8 +1418,8 @@ test('partial rendering: insert line in middle', () => {
 
 	log('Line A\nLine B\nLine C\nLine D');
 
-	// Should not erase any lines, just write new content
-	assert.equal(countEraseLines(stream.output), 0);
+	// Suffix is rewritten at its new position when lines are inserted
+	assert.equal(countEraseLines(stream.output), 2);
 	assert.ok(stream.output.includes('Line C'));
 });
 
@@ -1199,9 +1431,9 @@ test('partial rendering: remove line from middle', () => {
 
 	log('Line A\nLine B\nLine D');
 
-	// Should clear exactly 1 line (the removed line C)
-	assert.equal(countEraseLines(stream.output), 1);
-	assert.ok(!stream.output.includes('Line C'));
+	// Suffix is rewritten at its new position when lines are removed
+	assert.equal(countEraseLines(stream.output), 3);
+	assert.ok(stream.output.includes('Line D'));
 });
 
 test('partial rendering: modify multiple consecutive lines', () => {
@@ -1230,7 +1462,7 @@ test('partial rendering: common prefix and suffix optimization', () => {
 	assert.equal(countEraseLines(stream.output), 3);
 	assert.ok(stream.output.includes('NEW'));
 	// Should not rewrite the unchanged prefix/suffix lines
-	const sameCount = (stream.output.match(/SAME/g) || []).length;
+	const sameCount = (stream.output.match(/SAME/gv) || []).length;
 	assert.equal(sameCount, 0); // SAME lines should not be in the partial update
 });
 
@@ -1242,8 +1474,8 @@ test('partial rendering: change with different line counts', () => {
 
 	log('Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
 
-	// Should not erase (growing), just append new content
-	assert.equal(countEraseLines(stream.output), 0);
+	// Growing output rewrites from the changed point to reposition trailing content
+	assert.equal(countEraseLines(stream.output), 1);
 	assert.ok(stream.output.includes('Line 3'));
 	assert.ok(stream.output.includes('Line 5'));
 });
@@ -1348,4 +1580,245 @@ test('correct line counting with ANSI escape codes', () => {
 	// Should properly count as 2 lines despite ANSI codes
 	const eraseCount = countEraseLines(stream.output);
 	assert.ok(eraseCount <= 3); // 2 lines + trailing
+});
+
+test('persist does not height-clip output', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// Persist 5 lines into a terminal with only 3 rows.
+	// All 5 lines should be written since persist is permanent scrollback output.
+	log.persist('Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+
+	assert.ok(stream.output.includes('Line 1'), 'persist should not clip Line 1');
+	assert.ok(stream.output.includes('Line 2'), 'persist should not clip Line 2');
+	assert.ok(stream.output.includes('Line 3'), 'persist should not clip Line 3');
+	assert.ok(stream.output.includes('Line 4'), 'persist should not clip Line 4');
+	assert.ok(stream.output.includes('Line 5'), 'persist should not clip Line 5');
+});
+
+test('insert line with visible suffix renders correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('A\nC');
+	log('A\nX\nC');
+
+	// After inserting X between A and C, the suffix C must appear at its new position
+	assert.equal(terminal.state.getLine(0).str, 'A');
+	assert.equal(terminal.state.getLine(1).str, 'X');
+	assert.equal(terminal.state.getLine(2).str, 'C');
+});
+
+test('remove line with visible suffix renders correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('A\nB\nC\nD');
+	log('A\nD');
+
+	// After removing B and C, the suffix D must shift up
+	assert.equal(terminal.state.getLine(0).str, 'A');
+	assert.equal(terminal.state.getLine(1).str, 'D');
+});
+
+test('insert multiple lines with visible suffix renders correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('Header\nFooter');
+	log('Header\nNew 1\nNew 2\nNew 3\nFooter');
+
+	assert.equal(terminal.state.getLine(0).str, 'Header');
+	assert.equal(terminal.state.getLine(1).str, 'New 1');
+	assert.equal(terminal.state.getLine(2).str, 'New 2');
+	assert.equal(terminal.state.getLine(3).str, 'New 3');
+	assert.equal(terminal.state.getLine(4).str, 'Footer');
+});
+
+test('shrink then grow with common prefix renders correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	// Shrink from 4 lines to 1, keeping common prefix
+	log('Header\nTask 1\nTask 2\nTask 3');
+	log('Header');
+
+	// Grow again - must not leave ghost content
+	log('Header\nNew 1\nNew 2');
+
+	assert.equal(terminal.state.getLine(0).str, 'Header');
+	assert.equal(terminal.state.getLine(1).str, 'New 1');
+	assert.equal(terminal.state.getLine(2).str, 'New 2');
+});
+
+test('height clipping with CJK on removed lines produces correct line count', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// 4 content lines + trailing = 5 lines, height 3 → remove 2
+	log('你好世界\n第二行\nLine 3\nLine 4');
+
+	// The raw output must not contain the CJK lines (they should be clipped)
+	assert.ok(!stream.output.includes('你好'), 'CJK line should be clipped');
+	assert.ok(!stream.output.includes('第二'), 'CJK line should be clipped');
+	assert.ok(stream.output.includes('Line 3'), 'Line 3 should be visible');
+	assert.ok(stream.output.includes('Line 4'), 'Line 4 should be visible');
+});
+
+test('height clipping with emoji on removed lines produces correct line count', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// 4 content lines + trailing = 5 lines, height 3 → remove 2
+	log('👨‍👩‍👧 Family\n🎉 Party\nLine 3\nLine 4');
+
+	// The raw output must not contain the emoji lines
+	assert.ok(!stream.output.includes('Family'), 'Emoji line should be clipped');
+	assert.ok(!stream.output.includes('Party'), 'Emoji line should be clipped');
+	assert.ok(stream.output.includes('Line 3'), 'Line 3 should be visible');
+	assert.ok(stream.output.includes('Line 4'), 'Line 4 should be visible');
+});
+
+test('shrink to single line then update preserves correct cursor position', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('Status\nA\nB\nC\nD');
+	log('Status');
+	log('Done');
+
+	assert.equal(terminal.state.getLine(0).str, 'Done');
+	assert.equal(terminal.state.getLine(1).str, '');
+});
+
+test('repeated shrink and grow cycles render correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('H\nA\nB\nC');
+	log('H');
+	log('H\nX');
+	assert.equal(terminal.state.getLine(0).str, 'H');
+	assert.equal(terminal.state.getLine(1).str, 'X');
+
+	log('H');
+	log('H\nY\nZ');
+	assert.equal(terminal.state.getLine(0).str, 'H');
+	assert.equal(terminal.state.getLine(1).str, 'Y');
+	assert.equal(terminal.state.getLine(2).str, 'Z');
+});
+
+test('shrink with multi-line common prefix renders correctly', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+	// Shrink keeping 2-line prefix
+	log('Line 1\nLine 2');
+
+	assert.equal(terminal.state.getLine(0).str, 'Line 1');
+	assert.equal(terminal.state.getLine(1).str, 'Line 2');
+
+	// Grow back
+	log('Line 1\nLine 2\nNew 3');
+	assert.equal(terminal.state.getLine(0).str, 'Line 1');
+	assert.equal(terminal.state.getLine(1).str, 'Line 2');
+	assert.equal(terminal.state.getLine(2).str, 'New 3');
+});
+
+test('height clipping with CJK then update erases correct line count', () => {
+	const {terminal, log} = setup({rows: 3, columns: 40});
+
+	log('你好世界\n第二行\nLine 3\nLine 4');
+	// After clipping, update with ASCII-only content
+	log('AAA\nBBB');
+
+	assert.equal(terminal.state.getLine(0).str, 'AAA');
+	assert.equal(terminal.state.getLine(1).str, 'BBB');
+	assert.equal(terminal.state.getLine(2).str, '');
+});
+
+test('height clipping with VS16 emoji on removed lines', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// ❤️ is U+2764 + U+FE0F (VS16), width 2 in slice-ansi
+	log('❤️ love\n☁️ cloud\nLine 3\nLine 4');
+
+	assert.ok(!stream.output.includes('love'), 'VS16 emoji line should be clipped');
+	assert.ok(!stream.output.includes('cloud'), 'VS16 emoji line should be clipped');
+	assert.ok(stream.output.includes('Line 3'));
+	assert.ok(stream.output.includes('Line 4'));
+});
+
+test('height clipping with mixed CJK, emoji, and ASCII', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	log('🎉 你好\nASCII line\nVisible 1\nVisible 2');
+
+	assert.ok(!stream.output.includes('你好'), 'Mixed line should be clipped');
+	assert.ok(!stream.output.includes('ASCII'), 'ASCII line should be clipped'); // eslint-disable-line unicorn/text-encoding-identifier-case
+	assert.ok(stream.output.includes('Visible 1'));
+	assert.ok(stream.output.includes('Visible 2'));
+});
+
+test('height clipping preserves ANSI codes across clipped boundary', () => {
+	const {terminal, log} = setup({rows: 3, columns: 40});
+
+	// Green color opened on first line, closed on third
+	log('\u001B[32mRemoved line\nKept line\nLast line\u001B[39m');
+
+	// The first line is removed, but the green code must be re-opened
+	assert.equal(terminal.state.getLine(0).str, 'Kept line');
+	assert.equal(terminal.state.getLine(1).str, 'Last line');
+});
+
+test('done after shrink starts fresh session at correct position', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('Title\nA\nB\nC');
+	log('Title');
+	log.done();
+
+	// New session after done should write below the persisted output
+	log('New session');
+	assert.equal(terminal.state.getLine(0).str, 'Title');
+	assert.equal(terminal.state.getLine(1).str, 'New session');
+});
+
+test('clear after shrink leaves no artifacts', () => {
+	const {terminal, log} = setup({rows: 10, columns: 40});
+
+	log('Prefix\nX\nY\nZ');
+	log('Prefix');
+	log.clear();
+
+	log('Fresh');
+	assert.equal(terminal.state.getLine(0).str, 'Fresh');
+});
+
+test('persist after height-clipped render', () => {
+	const {terminal} = setup({rows: 3, columns: 40});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// First do a height-clipped render
+	log('A\nB\nC\nD\nE');
+	stream.output = '';
+
+	// Persist should erase the clipped output and write unclipped content
+	log.persist('Persisted line');
+	assert.ok(stream.output.includes('Persisted line'));
+});
+
+test('height clipping with CJK that also wraps', () => {
+	const {terminal} = setup({rows: 3, columns: 10});
+	const stream = makeCapturingStream(terminal);
+	const log = createLogUpdate(stream);
+
+	// CJK line wraps at width 10 (each CJK char is 2 columns, so 5 per line)
+	// "你好世界测试完成" = 8 CJK chars = 16 columns → wraps to 2 lines at width 10
+	log('你好世界测试完成\nVisible');
+
+	assert.ok(stream.output.includes('Visible'));
 });

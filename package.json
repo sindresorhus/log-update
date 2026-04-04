@@ -48,12 +48,12 @@
 		"ansi-escapes": "^7.3.0",
 		"cli-cursor": "^5.0.0",
 		"slice-ansi": "^9.0.0",
+		"string-width": "^8.2.0",
 		"strip-ansi": "^7.2.0",
 		"wrap-ansi": "^10.0.0"
 	},
 	"devDependencies": {
 		"@types/node": "^25.5.2",
-		"string-width": "^8.2.0",
 		"terminal.js": "^1.0.11",
 		"tsd": "^0.33.0",
 		"wcwidth": "^1.0.1",

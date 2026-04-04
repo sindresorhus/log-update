@@ -4,16 +4,19 @@ import cliCursor from 'cli-cursor';
 import wrapAnsi from 'wrap-ansi';
 import sliceAnsi from 'slice-ansi';
 import stripAnsi from 'strip-ansi';
+import stringWidth from 'string-width';
 
 const getWidth = (stream, defaultWidth) => stream.columns ?? defaultWidth ?? 80;
 const SYNCHRONIZED_OUTPUT_ENABLE = '\u001B[?2026h';
 const SYNCHRONIZED_OUTPUT_DISABLE = '\u001B[?2026l';
+const countLines = text => text.split('\n').length;
+const getFrameHeight = text => {
+	const unstyledText = stripAnsi(text);
+	return unstyledText === '' ? 0 : unstyledText.split('\n').length;
+};
 
 const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	const terminalHeight = stream.rows ?? defaultHeight ?? 24;
-	if (terminalHeight === undefined) {
-		return {text: wrappedText, wasClipped: false};
-	}
 
 	// Zero height: intentionally produce no output
 	if (terminalHeight === 0) {
@@ -21,26 +24,40 @@ const fitToTerminalHeight = (stream, wrappedText, defaultHeight) => {
 	}
 
 	const unstyled = stripAnsi(wrappedText);
-	const newlineCount = [...unstyled].filter(character => character === '\n').length;
-	const linesCount = newlineCount + 1;
-	const toRemove = Math.max(0, linesCount - terminalHeight);
+	const lines = unstyled.split('\n');
+	const toRemove = Math.max(0, lines.length - terminalHeight);
 	if (toRemove === 0) {
 		return {text: wrappedText, wasClipped: false};
 	}
 
-	let seen = 0;
+	// Compute visible-column cut to match sliceAnsi's position tracking.
+	// sliceAnsi counts each \n as 1 column, but stringWidth returns 0 for \n.
 	let cut = 0;
-	for (const [index, character] of [...unstyled].entries()) {
-		if (character === '\n') {
-			seen++;
-			if (seen === toRemove) {
-				cut = index + 1;
-				break;
-			}
-		}
+	for (let index = 0; index < toRemove; index++) {
+		cut += stringWidth(lines[index]) + 1;
 	}
 
-	return {text: sliceAnsi(wrappedText, cut), wasClipped: true};
+	let clippedText = sliceAnsi(wrappedText, cut);
+	let clippedLineCount = getFrameHeight(clippedText);
+
+	// Normalize the estimated cut so it matches sliceAnsi's width model.
+	while (clippedLineCount > terminalHeight) {
+		cut++;
+		clippedText = sliceAnsi(wrappedText, cut);
+		clippedLineCount = getFrameHeight(clippedText);
+	}
+
+	while (cut > 0) {
+		const previousClippedText = sliceAnsi(wrappedText, cut - 1);
+		if (getFrameHeight(previousClippedText) > terminalHeight) {
+			break;
+		}
+
+		cut--;
+		clippedText = previousClippedText;
+	}
+
+	return {text: clippedText, wasClipped: cut > 0};
 };
 
 /**
@@ -77,10 +94,15 @@ const buildPatch = ({
 }) => {
 	let sequence = '';
 
-	// Move cursor up to the first changed line, starting from the trailing blank line.
-	const upCount = Math.max(0, prevCount - 1 - start);
-	if (upCount > 0) {
-		sequence += ansiEscapes.cursorUp(upCount);
+	// Move cursor from the trailing blank line to the first changed line.
+	const cursorLine = prevCount - 1;
+	const cursorLineDelta = start - cursorLine;
+	if (cursorLineDelta > 0) {
+		sequence += ansiEscapes.cursorDown(cursorLineDelta);
+	}
+
+	if (cursorLineDelta < 0) {
+		sequence += ansiEscapes.cursorUp(-cursorLineDelta);
 	}
 
 	sequence += ansiEscapes.cursorLeft;
@@ -103,24 +125,35 @@ const buildPatch = ({
 
 	// Write the new changed block.
 	const wroteSlice = nextLines.slice(start, endNext + 1);
+	let writtenLineBreakCount = 0;
 	if (wroteSlice.length > 0) {
 		const chunk = wroteSlice.join('\n');
+		const shouldWriteTrailingNewline = nextWrappedEndsWithNewline
+			&& endNext < nextLines.length - 1
+			&& !chunk.endsWith('\n');
+
 		sequence += chunk;
+		writtenLineBreakCount = countLines(chunk) - 1;
 
 		// Ensure we do not leave trailing characters on the last written line
 		sequence += ansiEscapes.eraseEndLine;
 
-		if (nextWrappedEndsWithNewline && !chunk.endsWith('\n')) {
+		if (shouldWriteTrailingNewline) {
 			sequence += '\n';
+			writtenLineBreakCount++;
 		}
 	}
 
 	// Reposition cursor to the final trailing blank line for the next call
-	const currentLine = start + wroteSlice.length;
+	const currentLine = start + writtenLineBreakCount;
 	const finalLine = nextLines.length - 1;
-	const downCount = finalLine - currentLine;
-	if (downCount > 0) {
-		sequence += ansiEscapes.cursorDown(downCount);
+	const lineDelta = finalLine - currentLine;
+	if (lineDelta > 0) {
+		sequence += ansiEscapes.cursorDown(lineDelta);
+	}
+
+	if (lineDelta < 0) {
+		sequence += ansiEscapes.cursorUp(-lineDelta);
 	}
 
 	return sequence;
@@ -150,16 +183,16 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 
 	Returns both the wrapped string and an array of lines, where an empty frame (for `rows === 0`) is represented by `lines.length === 0`.
 	*/
-	const computeFrame = (text, width) => {
+	const computeFrame = (text, width, clipToHeight = true) => {
 		// Preserve user's trailing newlines, ensure at least one
 		const textString = String(text);
 		const raw = textString.endsWith('\n') ? textString : `${textString}\n`;
 		const wrapped = wrapAnsi(raw, width, {trim: false, hard: true, wordWrap: false});
-		const {text: clippedText, wasClipped} = fitToTerminalHeight(stream, wrapped, defaultHeight);
+		const {text: frameText, wasClipped} = clipToHeight ? fitToTerminalHeight(stream, wrapped, defaultHeight) : {text: wrapped, wasClipped: false};
 
 		// Derive lines. Special-case empty string to represent 0 lines.
-		const lines = clippedText === '' ? [] : clippedText.split('\n');
-		return {wrapped: clippedText, lines, wasClipped};
+		const lines = frameText === '' ? [] : frameText.split('\n');
+		return {wrapped: frameText, lines, wasClipped};
 	};
 
 	const reset = () => {
@@ -176,8 +209,12 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 		const width = getWidth(stream, defaultWidth);
 		const {wrapped, lines, wasClipped} = computeFrame(arguments_.join(' '), width);
 
-		// If nothing would be written (rows === 0 after clipping), skip I/O but update state.
+		// If nothing would be written (rows === 0 after clipping), erase previous output and update state.
 		if (lines.length === 0) {
+			if (previousLineCount > 0) {
+				write(ansiEscapes.eraseLines(previousLineCount));
+			}
+
 			previousOutput = wrapped;
 			previousWidth = width;
 			previousLineCount = 0;
@@ -210,7 +247,14 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 		}
 
 		const previousLines = previousOutput === '' ? [] : previousOutput.split('\n');
-		const {start, endPrevious, endNext} = diffFrames(previousLines, lines);
+		let {start, endPrevious, endNext} = diffFrames(previousLines, lines);
+
+		// When lines are inserted or removed, the suffix shifts position.
+		// Include it in the rewrite so it renders at the correct row.
+		if (previousLines.length !== lines.length) {
+			endPrevious = previousLines.length - 1;
+			endNext = lines.length - 1;
+		}
 
 		// If nothing changed (including trailing blank logic), bail
 		if (start === lines.length && previousLineCount === lines.length) {
@@ -257,13 +301,8 @@ export function createLogUpdate(stream, {showCursor = false, defaultWidth, defau
 
 	render.persist = (...arguments_) => {
 		const erasePrevious = previousLineCount > 0 ? ansiEscapes.eraseLines(previousLineCount) : '';
-		if (previousLineCount > 0) {
-			previousLineCount = 0;
-		}
-
-		const text = `${arguments_.join(' ')}`;
 		const width = getWidth(stream, defaultWidth);
-		const {wrapped: wrappedText} = computeFrame(text, width);
+		const {wrapped: wrappedText} = computeFrame(arguments_.join(' '), width, false);
 		write(erasePrevious + wrappedText);
 
 		reset();
