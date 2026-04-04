@@ -163,5 +163,5 @@ const log = createLogUpdate(process.stdout);
 */
 export function createLogUpdate(
 	stream: NodeJS.WritableStream,
-	options?: Options
+	options?: Options,
 ): typeof logUpdate;

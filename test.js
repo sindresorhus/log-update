@@ -474,11 +474,12 @@ test('partial updates: append-only update causes no erase', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -511,11 +512,12 @@ test('width change falls back to full erase', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -549,11 +551,12 @@ test('partial updates: only redraw changed tail', () => {
 	terminal.state.setMode('crlf', true);
 
 	class CapturingStream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -593,11 +596,12 @@ test('partial updates: unchanged suffix is preserved (clear only middle block)',
 	terminal.state.setMode('crlf', true);
 
 	class CapturingStream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -644,11 +648,12 @@ test('prefix-zero diff falls back to full erase', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -679,11 +684,12 @@ test('no-op update produces no output', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -710,11 +716,12 @@ test('no-op after wrapping produces no output', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -742,11 +749,12 @@ test('change only second line clears exactly one line', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -777,11 +785,12 @@ test('remove middle line clears exactly one line', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -812,11 +821,12 @@ test('insert middle line does not erase (just writes the new line)', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -847,11 +857,12 @@ test('emoji wide chars: change second line clears exactly one line', () => {
 	terminal.state.setMode('crlf', true);
 
 	class Stream {
+		output = '';
+
 		constructor(target) {
 			this.target = target;
 			this.rows = target.rows;
 			this.columns = target.columns;
-			this.output = '';
 		}
 
 		write(chunk) {
@@ -1102,12 +1113,10 @@ test('issue #64: animated updates preserve trailing lines', () => {
 
 test('huge frames are batched into a single write', () => {
 	class CountingStream {
-		constructor() {
-			this.columns = 80;
-			this.rows = 20_000;
-			this.output = '';
-			this.writeCount = 0;
-		}
+		columns = 80;
+		rows = 20_000;
+		output = '';
+		writeCount = 0;
 
 		write(chunk) {
 			this.writeCount++;
